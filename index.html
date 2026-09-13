@@ -1,0 +1,3239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Team Nuclear's Max Battle Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#1a0505; --surface:#2a0f0a; --card:#3d1410; --border:#5c2520;
+    --accent:#fdd835; --red:#ff8a50; --blue:#fdd835; --green:#f5c842;
+    --purple:#ff7043; --text:#fff8f0; --muted:#d4b89a;
+    --burgundy:#5c1a1a; --dark-burgundy:#3d0a0a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;
+    background-image:radial-gradient(ellipse at 20% 20%,rgba(253,216,53,0.04) 0%,transparent 50%),
+                     radial-gradient(ellipse at 80% 80%,rgba(92,26,26,0.2) 0%,transparent 50%);}
+  header{text-align:center;padding:28px 20px 18px;border-bottom:1px solid var(--border);position:relative;}
+  header::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);
+    width:220px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+  .logo-img{width:70px;height:70px;display:block;margin:0 auto 6px;}
+  h1{font-family:'Orbitron',sans-serif;font-size:clamp(1.3rem,4vw,2.2rem);font-weight:900;
+    letter-spacing:.08em;color:var(--accent);line-height:1.3;}
+  h1 span{color:var(--text);display:block;font-size:clamp(1.1rem,3.5vw,1.8rem);margin-top:4px;}
+  .subtitle{color:var(--muted);font-size:.9rem;margin-top:5px;letter-spacing:.1em;text-transform:uppercase;}
+  .container{max-width:1140px;margin:0 auto;padding:26px 20px;display:grid;grid-template-columns:390px 1fr;gap:26px;}
+  @media(max-width:820px){.container{grid-template-columns:1fr;}}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px;position:relative;overflow:visible;}
+  .panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#fdd835,#5c1a1a);}
+  .panel-title{font-family:'Orbitron',sans-serif;font-size:.82rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:18px;}
+  label{display:block;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;margin-top:13px;}
+  input,select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);padding:9px 11px;font-family:'Rajdhani',sans-serif;font-size:1rem;
+    transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(245,197,24,.15);}
+  button:focus{outline:none;} /* Remove default focus glow on all buttons */
+  select option{background:var(--surface);}
+
+  /* Autocomplete */
+  .ac-wrap{position:relative;margin-top:4px;}
+  .ac-wrap input{margin-top:0;}
+  .ac-dropdown{position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:9999;
+    background:var(--card);border:1px solid var(--accent);border-radius:8px;
+    max-height:280px;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.6);display:none;}
+  .ac-dropdown.open{display:block;}
+  .ac-item{padding:10px 14px;cursor:pointer;font-size:.95rem;font-family:'Rajdhani',sans-serif;
+    border-bottom:1px solid var(--border);color:var(--text);transition:background .1s;}
+  .ac-item:last-child{border-bottom:none;}
+  .ac-item:hover,.ac-item.active{background:rgba(245,197,24,.15);color:var(--accent);}
+  .ac-item em{font-style:normal;color:var(--accent);font-weight:700;}
+  .ac-dropdown::-webkit-scrollbar{width:4px;}
+  .ac-dropdown::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+  /* Stat preview */
+  .stat-preview{margin-top:10px;padding:10px 14px;background:rgba(253,216,53,.06);
+    border:1px solid rgba(253,216,53,.2);border-radius:8px;display:none;}
+  .stat-preview.show{display:block;}
+  .stat-label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#fdd835;margin-bottom:7px;}
+  .stat-chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .stat-chip{padding:3px 10px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid var(--border);font-size:.82rem;}
+  .stat-chip span{color:var(--accent);font-weight:600;}
+  .status-msg{font-size:.8rem;margin-top:6px;}
+  .status-msg.ok{color:var(--green);}
+  .status-msg.err{color:var(--red);}
+
+  .btn{width:100%;padding:11px;margin-top:14px;border:none;border-radius:8px;
+    font-family:'Orbitron',sans-serif;font-size:.77rem;letter-spacing:.1em;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+  .btn-add{background:linear-gradient(135deg,#fdd835,#d4a82e);color:#1a0505;font-weight:700;box-shadow:0 2px 8px rgba(253,216,53,0.2);}
+  .btn-add:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(253,216,53,0.3);}
+  .btn-add:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  .btn-analyze{background:linear-gradient(135deg,#fdd835,#f5c842);color:#1a0505;font-weight:700;box-shadow:0 2px 8px rgba(253,216,53,0.2);}
+  .btn-analyze:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(253,216,53,0.3);}
+  .btn-analyze:hover{transform:translateY(-1px);box-shadow:var(--glow);}
+  .btn-clear{background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:7px;}
+  .btn-clear:hover{border-color:var(--red);color:var(--red);}
+  .btn-export{background:var(--panel);border:1px solid var(--border);color:var(--text);}
+  .btn-export:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-import{background:var(--panel);border:1px solid var(--border);color:var(--text);}
+  .btn-import:hover{border-color:var(--accent);color:var(--accent);}
+  
+  .btn-cannon{background:var(--surface);border:2px solid var(--border);color:var(--muted);
+    padding:10px;border-radius:8px;font-size:.8rem;font-weight:700;letter-spacing:.03em;
+    cursor:pointer;transition:all .2s;}
+  .btn-cannon:hover:not(.active){border-color:var(--accent);color:var(--text);}
+  .btn-cannon.active{background:linear-gradient(135deg,rgba(253,216,53,0.2),rgba(253,216,53,0.05));
+    border-color:var(--accent);color:var(--accent);box-shadow:0 0 12px rgba(253,216,53,0.3);}
+
+  /* Max Type Switch */
+  .max-type-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+  .max-type-btn{background:var(--surface);border:2px solid var(--border);color:var(--muted);
+    padding:10px;border-radius:8px;font-size:.8rem;font-weight:700;letter-spacing:.03em;
+    cursor:pointer;transition:all .2s;}
+  .max-type-btn:hover:not(:disabled){border-color:var(--accent);color:var(--text);}
+  .max-type-btn.active{background:linear-gradient(135deg,rgba(253,216,53,0.2),rgba(253,216,53,0.05));
+    border-color:var(--accent);color:var(--accent);box-shadow:0 0 12px rgba(253,216,53,0.3);}
+  .max-type-btn:disabled{opacity:0.3;cursor:not-allowed;border-color:var(--border);color:var(--muted);}
+  .max-type-btn:disabled:hover{border-color:var(--border);}
+
+  .iv-btn{background:var(--surface);border:1px solid var(--border);color:var(--accent);
+    width:32px;height:32px;border-radius:6px;font-size:1.1rem;font-weight:700;cursor:pointer;
+    transition:all .2s;display:flex;align-items:center;justify-content:center;padding:0;}
+  .iv-btn:hover{background:var(--card);border-color:var(--accent);transform:scale(1.05);}
+  .iv-btn:active{transform:scale(0.95);}
+
+  /* Max Attack Level selector */
+  .max-attack-row{display:grid;grid-template-columns:55px 1fr 130px;gap:18px;align-items:center;margin-top:12px;}
+  .max-attack-label{font-size:.78rem;letter-spacing:.03em;color:var(--muted);text-align:left;font-weight:500;}
+  .max-attack-bar-wrap{height:6px;background:var(--surface);border-radius:3px;overflow:visible;border:1px solid var(--border);position:relative;}
+  .max-attack-bar-wrap::before,
+  .max-attack-bar-wrap::after{content:'';position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,0.3);z-index:2;}
+  .max-attack-bar-wrap::before{left:33.33%;} /* Division at level 1 */
+  .max-attack-bar-wrap::after{left:66.67%;} /* Division at level 2 */
+  .max-attack-bar{height:100%;border-radius:2px;transition:width .3s ease;position:relative;z-index:1;background:linear-gradient(90deg,#ff6b35,#ff8c5a);}
+  .max-attack-controls{display:flex;gap:4px;align-items:center;justify-content:flex-end;}
+  .max-attack-controls input{width:50px;text-align:center;padding:6px;height:32px;}
+
+  /* Max Guard Level selector */
+  .max-guard-row{display:grid;grid-template-columns:55px 1fr 130px;gap:18px;align-items:center;margin-top:8px;}
+  .max-guard-label{font-size:.78rem;letter-spacing:.03em;color:var(--muted);text-align:left;font-weight:500;}
+  .max-guard-bar-wrap{height:6px;background:var(--surface);border-radius:3px;overflow:visible;border:1px solid var(--border);position:relative;}
+  .max-guard-bar-wrap::before,
+  .max-guard-bar-wrap::after{content:'';position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,0.3);z-index:2;}
+  .max-guard-bar-wrap::before{left:33.33%;} /* Division at level 1 */
+  .max-guard-bar-wrap::after{left:66.67%;} /* Division at level 2 */
+  .max-guard-bar{height:100%;border-radius:2px;transition:width .3s ease;position:relative;z-index:1;background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+  .max-guard-controls{display:flex;gap:4px;align-items:center;justify-content:flex-end;}
+  .max-guard-controls input{width:50px;text-align:center;padding:6px;height:32px;}
+
+  /* Max Spirit Level selector */
+  .max-spirit-row{display:grid;grid-template-columns:55px 1fr 130px;gap:18px;align-items:center;margin-top:8px;}
+  .max-spirit-label{font-size:.78rem;letter-spacing:.03em;color:var(--muted);text-align:left;font-weight:500;}
+  .max-spirit-bar-wrap{height:6px;background:var(--surface);border-radius:3px;overflow:visible;border:1px solid var(--border);position:relative;}
+  .max-spirit-bar-wrap::before,
+  .max-spirit-bar-wrap::after{content:'';position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,0.3);z-index:2;}
+  .max-spirit-bar-wrap::before{left:33.33%;} /* Division at level 1 */
+  .max-spirit-bar-wrap::after{left:66.67%;} /* Division at level 2 */
+  .max-spirit-bar{height:100%;border-radius:2px;transition:width .3s ease;position:relative;z-index:1;background:linear-gradient(90deg,#9b59b6,#c084fc);}
+  .max-spirit-controls{display:flex;gap:4px;align-items:center;justify-content:flex-end;}
+  .max-spirit-controls input{width:50px;text-align:center;padding:6px;height:32px;}
+
+  /* Level selector */
+  .level-row{display:grid;grid-template-columns:55px 1fr 130px;gap:18px;align-items:center;margin-top:12px;}
+  .level-label{font-size:.78rem;letter-spacing:.03em;color:var(--muted);text-align:left;font-weight:500;}
+  .level-bar-wrap{height:6px;background:var(--surface);border-radius:3px;overflow:visible;border:1px solid var(--border);position:relative;}
+  .level-bar-wrap::before,
+  .level-bar-wrap::after{content:'';position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,0.3);z-index:2;}
+  .level-bar-wrap::before{left:33.33%;} /* Division at level ~17 */
+  .level-bar-wrap::after{left:66.67%;} /* Division at level ~34 */
+  .level-bar{height:100%;border-radius:2px;transition:width .3s ease;position:relative;z-index:1;background:linear-gradient(90deg,#4ac3ff,#6dd5ff);}
+  .level-controls{display:flex;gap:4px;align-items:center;justify-content:flex-end;}
+  .level-controls input{width:50px;text-align:center;padding:6px;height:32px;}
+
+  /* IV Layout */
+  .iv-container{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+  .iv-row{display:grid;grid-template-columns:55px 1fr 130px;gap:18px;align-items:center;}
+  .iv-label{font-size:.78rem;letter-spacing:.03em;color:var(--muted);text-align:left;font-weight:500;}
+  .iv-bar-wrap{height:6px;background:var(--surface);border-radius:3px;overflow:visible;border:1px solid var(--border);position:relative;}
+  .iv-bar-wrap::before,
+  .iv-bar-wrap::after{content:'';position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,0.3);z-index:2;}
+  .iv-bar-wrap::before{left:33.33%;} /* Division at IV 5 */
+  .iv-bar-wrap::after{left:66.67%;} /* Division at IV 10 */
+  .iv-bar{height:100%;border-radius:2px;transition:width .3s ease;position:relative;z-index:1;}
+  .iv-bar-attack{background:linear-gradient(90deg,#ff8a50,#ffb070);}
+  .iv-bar-defense{background:linear-gradient(90deg,#f5c842,#fdd862);}
+  .iv-bar-hp{background:linear-gradient(90deg,#d97b9e,#f0a3bc);}
+  .iv-controls{display:flex;gap:4px;align-items:center;justify-content:flex-end;}
+  .iv-controls input{width:50px;text-align:center;padding:6px;height:32px;}
+
+  .power-box{margin-top:10px;padding:8px 12px;background:rgba(253,216,53,.06);
+    border:1px solid rgba(253,216,53,.2);border-radius:7px;font-size:.88rem;display:none;}
+  .power-box span{color:var(--accent);font-weight:700;font-size:1rem;}
+
+  /* Boss */
+  .boss-info-box{margin-top:12px;padding:12px 14px;background:rgba(92,26,26,.15);
+    border:1px solid rgba(253,216,53,.2);border-radius:8px;font-size:.88rem;line-height:1.8;display:none;}
+  .type-pill{padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;}
+  .boss-types{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;}
+  .info-row{font-size:.8rem;color:var(--muted);margin-top:4px;}
+  .info-row strong{color:var(--red);}
+  .info-row.res strong{color:var(--green);}
+
+  /* Roster */
+  .roster-list{display:flex;flex-direction:column;gap:7px;margin-top:12px;}
+  .roster-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:9px 13px;display:flex;justify-content:space-between;align-items:center;
+    animation:slideIn .25s ease;}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+  .roster-name{font-weight:600;font-size:.97rem;}
+  .roster-meta{color:var(--muted);font-size:.75rem;margin-top:2px;}
+  .remove-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:3px 7px;
+    border-radius:4px;font-size:1rem;transition:color .15s;}
+  .remove-btn:hover{color:var(--red);background:rgba(232,64,64,.1);}
+  .buddy-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);
+    cursor:pointer;padding:1px 4px;border-radius:3px;font-size:.55rem;transition:all .2s;
+    margin-left:3px;font-weight:600;letter-spacing:.01em;}
+  .buddy-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .buddy-btn:focus{outline:none;} /* Remove focus glow */
+  .buddy-btn.active{background:linear-gradient(135deg,#ff69b4,#ff1493);border-color:#ff1493;
+    color:white;box-shadow:0 2px 8px rgba(255,20,147,0.4);}
+  
+  .empty-state{text-align:center;color:var(--muted);padding:24px;font-size:.9rem;
+    border:1px dashed var(--border);border-radius:8px;margin-top:10px;}
+  .count-badge{background:rgba(245,197,24,.15);color:var(--accent);border-radius:999px;
+    padding:1px 10px;font-size:.75rem;font-family:'Orbitron',sans-serif;margin-left:7px;vertical-align:middle;}
+
+  /* Results */
+  .results-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .boss-badge{padding:5px 14px;border-radius:999px;background:rgba(155,89,182,.2);
+    border:1px solid rgba(155,89,182,.4);color:#c77dff;font-family:'Orbitron',sans-serif;font-size:.72rem;}
+  .results-grid{display:grid;gap:18px;}
+  .role-card{background:var(--surface);border-radius:10px;border:1px solid var(--border);overflow:hidden;}
+  .role-header{padding:11px 16px;display:flex;align-items:center;gap:10px;
+    font-family:'Orbitron',sans-serif;font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;}
+  .role-header.attacker{background:linear-gradient(90deg,rgba(255,138,80,.3),transparent);color:#ff8a50;}
+  .role-header.tank{background:linear-gradient(90deg,rgba(245,200,66,.3),transparent);color:#f5c842;}
+  .role-header.healer{background:linear-gradient(90deg,rgba(16,185,129,.3),transparent);color:#10b981;}
+  .role-header.shielder{background:linear-gradient(90deg,rgba(253,216,53,.3),transparent);color:#fdd835;}
+  .role-entries{padding:10px;display:flex;flex-direction:column;gap:7px;}
+  .rank-entry{display:flex;align-items:center;gap:11px;padding:9px 13px;
+    background:var(--card);border-radius:8px;border:1px solid var(--border);
+    animation:slideIn .3s ease;animation-fill-mode:both;}
+  .rank-num{font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:900;min-width:26px;text-align:center;}
+  .rank-num.gold{color:#f5c518;text-shadow:0 0 10px rgba(245,197,24,.6);}
+  .rank-num.silver{color:#b0b0c8;}
+  .rank-num.bronze{color:#cd7f32;}
+  .rank-num.rest{color:var(--muted);}
+  .rank-info{flex:1;}
+  .rank-name{font-size:.97rem;font-weight:600;}
+  .rank-detail{font-size:.75rem;color:var(--muted);margin-top:2px;}
+  .eff-tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:.68rem;
+    font-weight:700;margin-left:5px;vertical-align:middle;}
+  .eff-super{background:rgba(232,64,64,.2);color:#ff8080;border:1px solid rgba(232,64,64,.3);}
+  .eff-good{background:rgba(61,206,107,.2);color:#7af0a8;border:1px solid rgba(61,206,107,.3);}
+  .eff-weak{background:rgba(74,144,226,.2);color:#80b8ff;border:1px solid rgba(74,144,226,.3);}
+  .eff-neutral{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border);}
+  .bar-wrap{width:64px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;}
+  .bar-fill{height:100%;border-radius:3px;}
+  .bar-fill.attacker{background:linear-gradient(90deg,#ff8a50,#ffb070);}
+  .bar-fill.tank{background:linear-gradient(90deg,#f5c842,#fdd862);}
+  .bar-fill.healer{background:linear-gradient(90deg,#10b981,#34d399);}
+  .bar-fill.shielder{background:linear-gradient(90deg,#fdd835,#ffe666);}
+  
+  /* Pagination Controls */
+  .pagination-controls{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 10px;
+    border-top:1px solid var(--border);margin-top:6px;}
+  .roster-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 10px;
+    border-top:1px solid var(--border);margin-top:10px;}
+  .btn-page{padding:6px 14px;font-size:0.8rem;min-width:auto;border-radius:6px;
+    background:var(--card);color:var(--text);border:1px solid var(--border);
+    cursor:pointer;transition:all 0.2s ease;}
+  .btn-page:hover:not(:disabled){background:var(--surface);border-color:var(--primary);}
+  .btn-page:disabled{opacity:0.4;cursor:not-allowed;}
+  .page-input-wrap{display:flex;align-items:center;gap:6px;}
+  .page-number-input{width:45px;padding:4px 8px;text-align:center;
+    background:var(--card);color:var(--text);border:1px solid var(--border);
+    border-radius:5px;font-size:0.85rem;font-family:'Orbitron',sans-serif;}
+  .page-number-input:focus{outline:none;border-color:var(--primary);}
+  
+  .no-results{text-align:center;color:var(--muted);padding:50px 20px;}
+  .no-results .icon{font-size:2.8rem;opacity:.35;margin-bottom:10px;}
+  .tip{font-size:.78rem;color:var(--muted);margin-top:14px;padding:10px 13px;
+    background:rgba(253,216,53,.04);border:1px solid rgba(253,216,53,.12);border-radius:6px;line-height:1.6;}
+  .tip strong{color:var(--accent);}
+  .tip code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;font-size:0.9em;display:inline-block;margin:2px 0;}
+  .tip em{display:block;margin-top:4px;}
+  .tip table{color:var(--text);}
+</style>
+</head>
+<body>
+<header>
+  <img src="https://your-logo-url-here.com/team-nuclear-logo.png" alt="Team Nuclear" class="logo-img">
+  <h1>TEAM NUCLEAR<span>MAX BATTLE ANALYZER</span></h1>
+  <div class="subtitle">Pokémon GO · Boss-Aware Team Rankings</div>
+</header>
+
+<div class="container">
+  <div>
+    <!-- BOSS -->
+    <div class="panel">
+      <div class="panel-title">👾 Select Max Boss</div>
+      <label style="color:var(--accent);font-weight:600;">Boss Name</label>
+      <div class="ac-wrap">
+        <input type="text" id="boss-input" placeholder="Start typing a boss name…"
+          autocomplete="off" spellcheck="false"
+          oninput="bossAcInput(this.value)"
+          onkeydown="bossAcKeydown(event)"/>
+        <div class="ac-dropdown" id="boss-ac-list"></div>
+      </div>
+      <div class="boss-info-box" id="boss-info"></div>
+    </div>
+
+    <!-- ADD POKEMON -->
+    <div class="panel" style="margin-top:20px;">
+      <div class="panel-title">➕ Add Pokémon</div>
+
+      <label style="color:var(--accent);font-weight:600;">Pokémon Name</label>
+      <div class="ac-wrap">
+        <input type="text" id="poke-input" placeholder="Start typing a name…"
+          autocomplete="off" spellcheck="false"
+          oninput="acInput(this.value)"
+          onkeydown="acKeydown(event)"/>
+        <div class="ac-dropdown" id="ac-list"></div>
+      </div>
+
+      <div class="stat-preview" id="stat-preview">
+        <div class="stat-label">📡 Level-Adjusted Stats (with IVs & CPM)</div>
+        <div class="stat-chips">
+          <div class="stat-chip">ATK <span id="p-atk">—</span></div>
+          <div class="stat-chip">DEF <span id="p-def">—</span></div>
+          <div class="stat-chip">HP <span id="p-hp">—</span></div>
+          <div class="stat-chip" style="background:linear-gradient(135deg,rgba(253,216,53,0.15),rgba(253,216,53,0.05))">CP <span id="p-cp" style="color:var(--accent);font-weight:700">—</span></div>
+          <div class="stat-chip">Type <span id="p-type">—</span></div>
+        </div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:5px;" id="base-stats"></div>
+        <div class="status-msg ok" id="stat-status"></div>
+      </div>
+
+      <!-- Container for sections visible only after Pokemon selected -->
+      <div id="pokemon-config-section" style="display:none;">
+        <label style="margin-top:18px;color:var(--accent);font-weight:600;" id="max-type-label">Max Type</label>
+        <div class="max-type-switch" id="max-type-section">
+          <button type="button" class="max-type-btn active" data-type="dmax" onclick="selectMaxType('dmax')">Dynamax</button>
+          <button type="button" class="max-type-btn" data-type="gmax" id="gmax-btn" onclick="selectMaxType('gmax')">Gigantamax</button>
+        </div>
+        <input type="hidden" id="max-type" value="dmax">
+
+        <label style="margin-top:18px;color:var(--accent);font-weight:600;">Fast Move</label>
+        <select id="fast-move-select" onchange="onFastMoveChange()" style="margin-top:4px;">
+          <option value="">— Select Fast Move —</option>
+        </select>
+
+        <label style="margin-top:18px;color:var(--accent);font-weight:600;">Max Move Levels</label>
+      
+      <div class="max-attack-row">
+        <label class="max-attack-label">Attack</label>
+        <div class="max-attack-bar-wrap">
+          <div class="max-attack-bar" id="max-attack-bar"></div>
+        </div>
+        <div class="max-attack-controls">
+          <button type="button" class="iv-btn" onclick="adjustMaxAttack(-1)">−</button>
+          <input type="text" id="max-level" value="1" maxlength="1" oninput="validateMaxAttack(this);updateMaxAttackBar();updatePower()">
+          <button type="button" class="iv-btn" onclick="adjustMaxAttack(1)">+</button>
+        </div>
+      </div>
+
+      <div class="max-guard-row">
+        <label class="max-guard-label">Guard</label>
+        <div class="max-guard-bar-wrap">
+          <div class="max-guard-bar" id="max-guard-bar"></div>
+        </div>
+        <div class="max-guard-controls">
+          <button type="button" class="iv-btn" onclick="adjustMaxGuard(-1)">−</button>
+          <input type="text" id="max-guard" value="0" maxlength="1" oninput="validateMaxGuard(this);updateMaxGuardBar()">
+          <button type="button" class="iv-btn" onclick="adjustMaxGuard(1)">+</button>
+        </div>
+      </div>
+
+      <div class="max-spirit-row">
+        <label class="max-spirit-label">Spirit</label>
+        <div class="max-spirit-bar-wrap">
+          <div class="max-spirit-bar" id="max-spirit-bar"></div>
+        </div>
+        <div class="max-spirit-controls">
+          <button type="button" class="iv-btn" onclick="adjustMaxSpirit(-1)">−</button>
+          <input type="text" id="max-spirit" value="0" maxlength="1" oninput="validateMaxSpirit(this);updateMaxSpiritBar()">
+          <button type="button" class="iv-btn" onclick="adjustMaxSpirit(1)">+</button>
+        </div>
+      </div>
+
+      <label style="margin-top:18px;color:var(--accent);font-weight:600;">Pokémon Level</label>
+      <div class="level-row">
+        <label class="level-label">Level</label>
+        <div class="level-bar-wrap">
+          <div class="level-bar" id="level-bar"></div>
+        </div>
+        <div class="level-controls">
+          <button type="button" class="iv-btn" onclick="adjustLevel(-0.5)">−</button>
+          <input type="text" id="poke-level" value="40" placeholder="1-50" maxlength="4" oninput="validateLevel(this);updateLevelBar()">
+          <button type="button" class="iv-btn" onclick="adjustLevel(0.5)">+</button>
+        </div>
+      </div>
+
+      <label style="margin-top:18px;color:var(--accent);font-weight:600;">Individual Values (IVs)</label>
+      <div class="iv-container">
+        <!-- Attack IV -->
+        <div class="iv-row">
+          <label class="iv-label">Attack</label>
+          <div class="iv-bar-wrap">
+            <div class="iv-bar iv-bar-attack" id="iv-bar-atk"></div>
+          </div>
+          <div class="iv-controls">
+            <button type="button" class="iv-btn" onclick="adjustIV('iv-atk', -1)">−</button>
+            <input type="text" id="iv-atk" value="15" placeholder="0-15" maxlength="2" oninput="validateIV(this);updateIVBar('atk')">
+            <button type="button" class="iv-btn" onclick="adjustIV('iv-atk', 1)">+</button>
+          </div>
+        </div>
+        
+        <!-- Defense IV -->
+        <div class="iv-row">
+          <label class="iv-label">Defense</label>
+          <div class="iv-bar-wrap">
+            <div class="iv-bar iv-bar-defense" id="iv-bar-def"></div>
+          </div>
+          <div class="iv-controls">
+            <button type="button" class="iv-btn" onclick="adjustIV('iv-def', -1)">−</button>
+            <input type="text" id="iv-def" value="15" placeholder="0-15" maxlength="2" oninput="validateIV(this);updateIVBar('def')">
+            <button type="button" class="iv-btn" onclick="adjustIV('iv-def', 1)">+</button>
+          </div>
+        </div>
+        
+        <!-- HP IV -->
+        <div class="iv-row">
+          <label class="iv-label">HP</label>
+          <div class="iv-bar-wrap">
+            <div class="iv-bar iv-bar-hp" id="iv-bar-hp"></div>
+          </div>
+          <div class="iv-controls">
+            <button type="button" class="iv-btn" onclick="adjustIV('iv-hp', -1)">−</button>
+            <input type="text" id="iv-hp" value="15" placeholder="0-15" maxlength="2" oninput="validateIV(this);updateIVBar('hp')">
+            <button type="button" class="iv-btn" onclick="adjustIV('iv-hp', 1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="power-box" id="power-box">
+        Max Attack Power: <span id="power-val"></span>
+      </div>
+      </div><!-- End pokemon-config-section -->
+
+      <button class="btn btn-add" id="add-btn" onclick="addPokemon()" disabled>
+        Add to Roster
+      </button>
+      <div id="add-validation-msg" style="display:none;margin-top:8px;font-size:0.8rem;color:var(--red);text-align:center;"></div>
+    </div>
+
+    <!-- ROSTER -->
+    <div class="panel" style="margin-top:20px;">
+      <div class="panel-title">
+        📋 My Roster
+        <span class="count-badge" id="roster-count">0</span>
+      </div>
+      <div id="roster-area"><div class="empty-state">No Pokémon added yet.</div></div>
+      <button class="btn btn-cannon" id="dynamax-cannon-btn" onclick="toggleDynamaxCannon()" style="margin-top:10px;">
+        <span id="cannon-text">Dynamax Cannon: OFF</span>
+      </button>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;">
+        <button class="btn btn-export" onclick="exportRoster()">💾 Export</button>
+        <button class="btn btn-import" onclick="document.getElementById('import-file').click()">📂 Import</button>
+        <button class="btn btn-clear" onclick="clearRoster()">🗑 Clear</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importRoster(event)">
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="panel">
+    <div class="panel-title">📊 Battle Role Rankings</div>
+    
+    <label style="color:var(--accent);font-weight:600;">Trainers in Team</label>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;">
+      <button type="button" class="max-type-btn" data-players="1" onclick="selectTeamSize(1)">1</button>
+      <button type="button" class="max-type-btn" data-players="2" onclick="selectTeamSize(2)">2</button>
+      <button type="button" class="max-type-btn" data-players="3" onclick="selectTeamSize(3)">3</button>
+      <button type="button" class="max-type-btn active" data-players="4" onclick="selectTeamSize(4)">4</button>
+    </div>
+    <input type="hidden" id="team-size" value="4">
+    
+    <label style="color:var(--accent);font-weight:600;margin-top:18px;display:block;">Weather</label>
+    <select id="weather-select" style="width:100%;padding:10px;margin-top:8px;background:var(--bg);color:var(--text);border:1px solid rgba(253,216,53,0.2);border-radius:6px;font-size:0.9rem;">
+      <option value="none">None</option>
+      <option value="clear">☀️ Clear/Sunny</option>
+      <option value="partly_cloudy">⛅ Partly Cloudy</option>
+      <option value="cloudy">☁️ Cloudy</option>
+      <option value="rain">🌧️ Rain</option>
+      <option value="snow">❄️ Snow</option>
+      <option value="fog">🌫️ Fog</option>
+      <option value="windy">💨 Windy</option>
+    </select>
+    
+    <button class="btn btn-analyze" onclick="analyzeTeam()" style="margin-top:18px;">⚡ Analyze vs Boss</button>
+    
+    <div id="results" style="margin-top:18px;">
+      <div class="no-results">
+        <div class="icon">🔍</div>
+        Select a boss, add your Pokémon,<br>then click <strong style="color:var(--accent)">Analyze vs Boss</strong>.
+      </div>
+    </div>
+    <div class="tip" id="tip" style="display:none">
+      <strong>💡 Ranking Formulas</strong><br><br>
+      
+      <strong>Base Damage Function:</strong><br>
+      <code>damage = floor(0.5 × power × (atk ÷ def) × effectiveness × STAB × weather) + 1</code><br>
+      <code>STAB = 1.2 if move type matches attacker's Pokémon type, else 1.0</code><br>
+      <code>weather = 1.2 if move type is boosted by current weather, else 1.0</code><br>
+      <code>effectiveness = type multiplier (0.39, 0.625, 1.0, 1.6, 2.56, etc.)</code><br><br>
+      
+      <strong>Weather Boost Reference:</strong><br>
+      <table style="width:100%;border-collapse:collapse;font-size:0.85em;margin:8px 0;">
+        <tr style="background:rgba(253,216,53,0.1);"><th style="padding:4px 8px;text-align:left;border:1px solid rgba(253,216,53,0.2);">Weather</th><th style="padding:4px 8px;text-align:left;border:1px solid rgba(253,216,53,0.2);">Boosted Types (+20% damage)</th></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">☀️ Clear/Sunny</td><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">Fire, Grass, Ground</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">⛅ Partly Cloudy</td><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">Normal, Rock</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">☁️ Cloudy</td><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">Fairy, Fighting, Poison</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">🌧️ Rain</td><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">Water, Electric, Bug</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">❄️ Snow</td><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">Ice, Steel</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">🌫️ Fog</td><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">Dark, Ghost</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">💨 Windy</td><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">Dragon, Flying, Psychic</td></tr>
+      </table><br>
+      
+      <strong>Team Size Multiplier:</strong><br>
+      <code>teamMultiplier = ceil(100 × f1 ÷ ((TIT - 1) × f1 + 0.5)) ÷ ceil(100 ÷ TIT)</code><br>
+      <code>where: f1 = your Pokémon's fast move duration (seconds), TIT = trainers in team (1-4)</code><br><br>
+      
+      <table style="width:100%;border-collapse:collapse;font-size:0.85em;margin:8px 0;">
+        <tr style="background:rgba(253,216,53,0.1);"><th style="padding:4px 8px;text-align:left;border:1px solid rgba(253,216,53,0.2);">Fast Move</th><th style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.2);">1 Trainer</th><th style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.2);">2 Trainers</th><th style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.2);">3 Trainers</th><th style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.2);">4 Trainers</th></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">0.5s</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.00</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.00</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.00</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.00</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">1.0s</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×2.00</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.34</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.18</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.16</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">1.5s</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×3.00</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.50</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.26</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.20</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">2.0s</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×4.00</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.60</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.32</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.24</td></tr>
+        <tr><td style="padding:4px 8px;border:1px solid rgba(253,216,53,0.1);">2.5s</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×5.00</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.68</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.35</td><td style="padding:4px 8px;text-align:center;border:1px solid rgba(253,216,53,0.1);">×1.28</td></tr>
+      </table><br>
+      
+      <strong>⚔️ Attacker Score</strong> (higher is better):<br>
+      <code>effectiveMaxLevel = cannonActive ? min(maxLevel + 1, 4) : maxLevel</code><br>
+      <code>effectivePower = MAX_POWER[maxType][effectiveMaxLevel]</code><br>
+      <code>attackerScore = damage(effectivePower, yourAtk, bossDefense, effectiveness, STAB, weather)</code><br><br>
+      
+      <strong>🔵 Shielder Score</strong> (lower is better):<br>
+      <code>avgChargedMoveDmg = average of damage(bossMoves, bossAtk, yourDef, effectiveness, bossSTAB, weather)</code><br>
+      <code>effectiveGuardLevel = cannonActive ? min(maxGuard + 1, 4) : maxGuard</code><br>
+      <code>levelAdjustment = {0:∞, 1:1.67, 2:1.33, 3:1.0, 4:0.67}[effectiveGuardLevel]</code><br>
+      <code>shielderScore = avgChargedMoveDmg × levelAdjustment × teamMultiplier</code><br><br>
+      
+      <strong>🛡️ Tank Score</strong> (lower is better):<br>
+      <code>avgChargedMoveDmg = average of damage(bossMoves, bossAtk, yourDef, effectiveness, bossSTAB, weather)</code><br>
+      <code>effectiveHP = yourHP (Zamazenta gets: yourHP + guardLevelBonus)</code><br>
+      <code>tankPct = (avgChargedMoveDmg ÷ effectiveHP) × 100</code><br>
+      <code>tankScore = tankPct × teamMultiplier</code><br><br>
+      
+      <strong>💚 Healer Score</strong> (higher is better):<br>
+      <code>effectiveSpiritLevel = cannonActive ? min(maxSpirit + 1, 4) : maxSpirit</code><br>
+      <code>healPct = {0:0, 1:0.08, 2:0.12, 3:0.16, 4:0.20}[effectiveSpiritLevel]</code><br>
+      <code>healerScore = floor(yourHP × healPct)</code><br><br>
+      
+      <strong>Notes:</strong><br>
+      • Dynamax Cannon boosts all levels by +1 (except Zacian/Zamazenta)<br>
+      • Guard Lv0 → excluded from Shielder rankings<br>
+      • Spirit Lv0 → excluded from Healer rankings (unless cannon boosts to Lv1)<br>
+      • Weather boost applies to both your max moves AND boss charged moves<br>
+      • <strong>Zamazenta (Crowned Shield):</strong> Gains bonus HP for Tank scoring only<br>
+      &nbsp;&nbsp;Guard Lv0/1/2/3/4 = +0/20/40/60/80 HP (e.g., 207 base HP + 60 = 267 HP at Guard Lv3)
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// 🔍 ERROR LOGGING & DEBUGGING
+// ════════════════════════════════════════════════════════
+window.addEventListener('error', function(e) {
+  console.error('=== GLOBAL ERROR ===');
+  console.error('Message:', e.message);
+  console.error('Source:', e.filename);
+  console.error('Line:', e.lineno, 'Column:', e.colno);
+  console.error('Error object:', e.error);
+  console.error('Stack:', e.error?.stack);
+  return false;
+});
+
+// console.log('Script started loading...');
+
+// ════════════════════════════════════════════════════════
+// 📊 DATABASE SECTION - All Game Data Tables
+// ════════════════════════════════════════════════════════
+// This section contains all static data tables used by the Max Battle Analyzer.
+// Organized in logical order for easy maintenance and updates.
+
+// ─── BATTLE MECHANICS ──────────────────────────────────────
+
+// Combat Power Multiplier (CPM) - Used to calculate final stats from base stats + IVs
+const CPM = {
+  1.0:0.094,1.5:0.135137432,2.0:0.16639787,2.5:0.192650919,3.0:0.21573247,3.5:0.236572661,4.0:0.25572005,4.5:0.273530381,5.0:0.29024988,5.5:0.306057377,6.0:0.3210876,6.5:0.335445036,7.0:0.34921268,7.5:0.362457751,8.0:0.37523559,8.5:0.387592406,9.0:0.39956728,9.5:0.411193551,10.0:0.42250001,10.5:0.432926419,11.0:0.44310755,11.5:0.453059958,12.0:0.46279839,12.5:0.472336083,13.0:0.48168495,13.5:0.490855807,14.0:0.49985844,14.5:0.508701765,15.0:0.51739395,15.5:0.525942511,16.0:0.53435433,16.5:0.542635767,17.0:0.55079269,17.5:0.558830576,18.0:0.56675452,18.5:0.574569153,19.0:0.58227891,19.5:0.589887917,20.0:0.59740001,20.5:0.604818814,21.0:0.61215729,21.5:0.619399365,22.0:0.62656713,22.5:0.633644533,23.0:0.64065295,23.5:0.647576426,24.0:0.65443563,24.5:0.661214806,25.0:0.667934,25.5:0.674577537,26.0:0.68116492,26.5:0.687680648,27.0:0.69414365,27.5:0.700538673,28.0:0.70688421,28.5:0.713164996,29.0:0.71939909,29.5:0.725571552,30.0:0.7317,30.5:0.734741009,31.0:0.73776948,31.5:0.740785574,32.0:0.74378943,32.5:0.746781211,33.0:0.74976104,33.5:0.752729087,34.0:0.75568551,34.5:0.758630378,35.0:0.76156384,35.5:0.764486065,36.0:0.76739717,36.5:0.770297266,37.0:0.7731865,37.5:0.776064962,38.0:0.77893275,38.5:0.781790055,39.0:0.78463697,39.5:0.787473578,40.0:0.79030001,40.5:0.792803950626759,41.0:0.795300006866455,41.5:0.797803921486970,42.0:0.800300002098084,42.5:0.802803892322847,43.0:0.805299997329712,43.5:0.807803863460723,44.0:0.810299992561340,44.5:0.812803834895027,45.0:0.815299987792969,45.5:0.817803806620319,46.0:0.820299983024597,46.5:0.822803778631297,47.0:0.825299978256226,47.5:0.827803750922783,48.0:0.830299973487854,48.5:0.832803753381377,49.0:0.835300028324127,49.5:0.837803755931570,50.0:0.840300023555755,50.5:0.842803729034748,51.0:0.845300018787384
+};
+
+// console.log('✓ CPM loaded');
+
+// Max Attack Power by move type and level (0-4)
+const MAX_POWER = { 
+  dmax: {1:250, 2:300, 3:350, 4:450}, 
+  gmax: {1:350, 2:400, 3:450, 4:550} 
+};
+
+// Max Spirit healing amounts by level (0-4)
+const MAX_SPIRIT_HEAL = {
+  0: 0,    // No ability
+  1: 0.08, // 8% of user's HP
+  2: 0.12, // 12% of user's HP
+  3: 0.16, // 16% of user's HP
+  4: 0.20  // 20% of user's HP (reserved for future)
+};
+
+// Max Guard shield HP by level (0-4)
+const MAX_GUARD_SHIELD = {
+  0: 0,   // No shield
+  1: 20,  // 20 HP shield
+  2: 40,  // 40 HP shield
+  3: 60,  // 60 HP shield
+  4: 80   // 80 HP shield (reserved for future)
+};
+
+// Max Guard damage reduction multiplier by level (0-4)
+// Lower multiplier = better shielding (takes less damage)
+const MAX_GUARD_ADJUSTMENT = {
+  0: 1,           // No adjustment (not ranked)
+  1: 1.66666666,  // Level 1 - worst shielding
+  2: 1.33333333,  // Level 2
+  3: 1.0,         // Level 3 - best shielding
+  4: 0.66666666   // Level 4 (reserved for future)
+};
+
+// Weather boost configuration - which types get +20% damage in each weather
+const WEATHER_BOOST = {
+  "clear": ["Fire", "Grass", "Ground"],
+  "partly_cloudy": ["Normal", "Rock"],
+  "cloudy": ["Fairy", "Fighting", "Poison"],
+  "rain": ["Water", "Electric", "Bug"],
+  "snow": ["Ice", "Steel"],
+  "fog": ["Dark", "Ghost"],
+  "windy": ["Dragon", "Flying", "Psychic"]
+};
+
+// ─── TYPE SYSTEM ──────────────────────────────────────────
+
+// Type colors for UI display
+const TYPE_COLORS = {
+  Normal:'#a8a878',Fire:'#f08030',Water:'#6890f0',Electric:'#f8d030',
+  Grass:'#78c850',Ice:'#98d8d8',Fighting:'#c03028',Poison:'#a040a0',
+  Ground:'#e0c068',Flying:'#a890f0',Psychic:'#f85888',Bug:'#a8b820',
+  Rock:'#b8a038',Ghost:'#705898',Dragon:'#7038f8',Dark:'#705848',
+  Steel:'#b8b8d0',Fairy:'#ee99ac',
+};
+
+// All Pokemon types (derived from TYPE_COLORS)
+const ALL_TYPES = Object.keys(TYPE_COLORS);
+
+// ─── SPECIAL POKEMON CONFIGURATIONS ──────────────────────
+
+// Special legendaries with hardcoded max moves (don't use D-Max/G-Max)
+// Zacian → Behemoth Blade, Zamazenta → Behemoth Bash, Eternatus → Dynamax Cannon
+const SPECIAL_MAX_MOVES = {
+  "ZACIAN_CROWNED_SWORD_FORM":    {name: "Behemoth Blade",  type: "Steel"},
+  "ZAMAZENTA_CROWNED_SHIELD_FORM":{name: "Behemoth Bash",   type: "Steel"},
+  "ETERNATUS":                    {name: "Dynamax Cannon",  type: "Dragon"},
+};
+
+// Pokemon that cannot receive Dynamax Cannon boost (Zacian and Zamazenta)
+// Eternatus can use Dynamax Cannon to boost itself
+const NO_DYNAMAX_CANNON_BOOST = new Set([
+  "ZACIAN_CROWNED_SWORD_FORM",
+  "ZAMAZENTA_CROWNED_SHIELD_FORM"
+]);
+
+// ─── MOVE DATABASES ───────────────────────────────────────
+
+// FAST MOVES DATABASE
+// Source: https://fight.pokebattler.com/moves
+// Format: {moveId, type, power, durationMs, energyDelta, vfxName}
+const FAST_MOVES = {
+  "move": [
+    {moveId:"VINE_WHIP_FAST",type:"POKEMON_TYPE_GRASS",power:6.0,durationMs:500,energyDelta:5,vfxName:"vine_whip_fast"},
+    {moveId:"TACKLE_FAST",type:"POKEMON_TYPE_NORMAL",power:5.0,durationMs:500,energyDelta:5,vfxName:"tackle_fast"},
+    {moveId:"RAZOR_LEAF_FAST",type:"POKEMON_TYPE_GRASS",power:13.0,durationMs:1000,energyDelta:7,vfxName:"razor_leaf_fast"},
+    {moveId:"EMBER_FAST",type:"POKEMON_TYPE_FIRE",power:10.0,durationMs:1000,energyDelta:10,vfxName:"ember_fast"},
+    {moveId:"SCRATCH_FAST",type:"POKEMON_TYPE_NORMAL",power:6.0,durationMs:500,energyDelta:4,vfxName:"scratch_fast"},
+    {moveId:"FIRE_FANG_FAST",type:"POKEMON_TYPE_FIRE",power:13.0,durationMs:1000,energyDelta:9,vfxName:"fire_fang_fast"},
+    {moveId:"AIR_SLASH_FAST",type:"POKEMON_TYPE_FLYING",power:12.0,durationMs:1000,energyDelta:8,vfxName:"air_slash_fast"},
+    {moveId:"FIRE_SPIN_FAST",type:"POKEMON_TYPE_FIRE",power:13.0,durationMs:1000,energyDelta:9,vfxName:"fire_spin_fast"},
+    {moveId:"DRAGON_BREATH_FAST",type:"POKEMON_TYPE_DRAGON",power:6.0,durationMs:500,energyDelta:4,vfxName:"dragon_breath_fast"},
+    {moveId:"WING_ATTACK_FAST",type:"POKEMON_TYPE_FLYING",power:10.0,durationMs:1000,energyDelta:11,vfxName:"wing_attack_fast"},
+    {moveId:"BUBBLE_FAST",type:"POKEMON_TYPE_WATER",power:10.0,durationMs:1000,energyDelta:12,vfxName:"bubble_fast"},
+    {moveId:"BITE_FAST",type:"POKEMON_TYPE_DARK",power:6.0,durationMs:500,energyDelta:4,vfxName:"bite_fast"},
+    {moveId:"WATER_GUN_FAST",type:"POKEMON_TYPE_WATER",power:5.0,durationMs:500,energyDelta:5,vfxName:"water_gun_fast"},
+    {moveId:"ROLLOUT_FAST",type:"POKEMON_TYPE_ROCK",power:15.0,durationMs:1500,energyDelta:19,vfxName:"rollout_fast"},
+    {moveId:"BUG_BITE_FAST",type:"POKEMON_TYPE_BUG",power:5.0,durationMs:500,energyDelta:6,vfxName:"bug_bite_fast"},
+    {moveId:"CONFUSION_FAST",type:"POKEMON_TYPE_PSYCHIC",power:19.0,durationMs:1500,energyDelta:14,vfxName:"confusion_fast"},
+    {moveId:"STRUGGLE_BUG_FAST",type:"POKEMON_TYPE_BUG",power:15.0,durationMs:1500,energyDelta:15,vfxName:"struggle_bug_fast"},
+    {moveId:"THUNDER_SHOCK_FAST",type:"POKEMON_TYPE_ELECTRIC",power:4.0,durationMs:500,energyDelta:7,vfxName:"thunder_shock_fast"},
+    {moveId:"QUICK_ATTACK_FAST",type:"POKEMON_TYPE_NORMAL",power:10.0,durationMs:1000,energyDelta:13,vfxName:"quick_attack_fast"},
+    {moveId:"PRESENT_FAST",type:"POKEMON_TYPE_NORMAL",power:6.0,durationMs:1500,energyDelta:23,vfxName:"present_fast"},
+    {moveId:"SPARK_FAST",type:"POKEMON_TYPE_ELECTRIC",power:4.0,durationMs:500,energyDelta:6,vfxName:"spark_fast"},
+    {moveId:"VOLT_SWITCH_FAST",type:"POKEMON_TYPE_ELECTRIC",power:13.0,durationMs:1500,energyDelta:20,vfxName:"volt_switch_fast"},
+    {moveId:"CHARM_FAST",type:"POKEMON_TYPE_FAIRY",power:20.0,durationMs:1500,energyDelta:11,vfxName:"charm_fast"},
+    {moveId:"SNARL_FAST",type:"POKEMON_TYPE_DARK",power:11.0,durationMs:1000,energyDelta:13,vfxName:"snarl_fast"},
+    {moveId:"THUNDER_FANG_FAST",type:"POKEMON_TYPE_ELECTRIC",power:10.0,durationMs:1000,energyDelta:13,vfxName:"thunder_fang_fast"},
+    {moveId:"ZEN_HEADBUTT_FAST",type:"POKEMON_TYPE_PSYCHIC",power:11.0,durationMs:1000,energyDelta:9,vfxName:"zen_headbutt_fast"},
+    {moveId:"CHARGE_BEAM_FAST",type:"POKEMON_TYPE_ELECTRIC",power:7.0,durationMs:1000,energyDelta:14,vfxName:"charge_beam_fast"},
+    {moveId:"PSYCHO_CUT_FAST",type:"POKEMON_TYPE_PSYCHIC",power:4.0,durationMs:500,energyDelta:7,vfxName:"psycho_cut_fast"},
+    {moveId:"COUNTER_FAST",type:"POKEMON_TYPE_FIGHTING",power:13.0,durationMs:1000,energyDelta:9,vfxName:"counter_fast"},
+    {moveId:"KARATE_CHOP_FAST",type:"POKEMON_TYPE_FIGHTING",power:10.0,durationMs:1000,energyDelta:13,vfxName:"karate_chop_fast"},
+    {moveId:"ROCK_SMASH_FAST",type:"POKEMON_TYPE_FIGHTING",power:17.0,durationMs:1500,energyDelta:12,vfxName:"rock_smash_fast"},
+    {moveId:"LOW_KICK_FAST",type:"POKEMON_TYPE_FIGHTING",power:5.0,durationMs:500,energyDelta:5,vfxName:"low_kick_fast"},
+    {moveId:"BULLET_PUNCH_FAST",type:"POKEMON_TYPE_STEEL",power:10.0,durationMs:1000,energyDelta:11,vfxName:"bullet_punch_fast"},
+    {moveId:"LICK_FAST",type:"POKEMON_TYPE_GHOST",power:5.0,durationMs:500,energyDelta:6,vfxName:"lick_fast"},
+    {moveId:"ASTONISH_FAST",type:"POKEMON_TYPE_GHOST",power:7.0,durationMs:1000,energyDelta:13,vfxName:"astonish_fast"},
+    {moveId:"SUCKER_PUNCH_FAST",type:"POKEMON_TYPE_DARK",power:5.0,durationMs:500,energyDelta:6,vfxName:"sucker_punch_fast"},
+    {moveId:"SHADOW_CLAW_FAST",type:"POKEMON_TYPE_GHOST",power:6.0,durationMs:500,energyDelta:4,vfxName:"shadow_claw_fast"},
+    {moveId:"HEX_FAST",type:"POKEMON_TYPE_GHOST",power:8.0,durationMs:1000,energyDelta:13,vfxName:"hex_fast"},
+    {moveId:"MUD_SHOT_FAST",type:"POKEMON_TYPE_GROUND",power:4.0,durationMs:500,energyDelta:6,vfxName:"mud_shot_fast"},
+    {moveId:"METAL_CLAW_FAST",type:"POKEMON_TYPE_STEEL",power:6.0,durationMs:500,energyDelta:5,vfxName:"metal_claw_fast"},
+    {moveId:"DOUBLE_KICK_FAST",type:"POKEMON_TYPE_FIGHTING",power:10.0,durationMs:1000,energyDelta:13,vfxName:"double_kick_fast"},
+    {moveId:"POUND_FAST",type:"POKEMON_TYPE_NORMAL",power:6.0,durationMs:500,energyDelta:5,vfxName:"pound_fast"},
+    {moveId:"FROST_BREATH_FAST",type:"POKEMON_TYPE_ICE",power:11.0,durationMs:1000,energyDelta:9,vfxName:"frost_breath_fast"},
+    {moveId:"PSYWAVE_FAST",type:"POKEMON_TYPE_PSYCHIC",power:4.0,durationMs:500,energyDelta:7,vfxName:"psywave"},
+    {moveId:"ICE_SHARD_FAST",type:"POKEMON_TYPE_ICE",power:10.0,durationMs:1000,energyDelta:10,vfxName:"ice_shard_fast"},
+    {moveId:"FEINT_ATTACK_FAST",type:"POKEMON_TYPE_DARK",power:11.0,durationMs:1000,energyDelta:10,vfxName:"feint_attack_fast"},
+    {moveId:"BULLET_SEED_FAST",type:"POKEMON_TYPE_GRASS",power:7.0,durationMs:1000,energyDelta:13,vfxName:"bullet_seed_fast"},
+    {moveId:"ROCK_THROW_FAST",type:"POKEMON_TYPE_ROCK",power:13.0,durationMs:1000,energyDelta:8,vfxName:"rock_throw_fast"},
+    {moveId:"WATERFALL_FAST",type:"POKEMON_TYPE_WATER",power:13.0,durationMs:1000,energyDelta:7,vfxName:"waterfall_fast"},
+    {moveId:"FURY_CUTTER_FAST",type:"POKEMON_TYPE_BUG",power:4.0,durationMs:500,energyDelta:8,vfxName:"fury_cutter_fast"},
+    {moveId:"YAWN_FAST",type:"POKEMON_TYPE_NORMAL",power:null,durationMs:1500,energyDelta:13,vfxName:"yawn_fast"},
+    {moveId:"EXTRASENSORY_FAST",type:"POKEMON_TYPE_PSYCHIC",power:11.0,durationMs:1000,energyDelta:11,vfxName:"extrasensory_fast"},
+    {moveId:"ICE_FANG_FAST",type:"POKEMON_TYPE_ICE",power:12.0,durationMs:1500,energyDelta:20,vfxName:"ice_fang_fast"},
+    {moveId:"HIDDEN_POWER_FAST",type:null,power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_BUG_FAST",type:"POKEMON_TYPE_BUG",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_DARK_FAST",type:"POKEMON_TYPE_DARK",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_DRAGON_FAST",type:"POKEMON_TYPE_DRAGON",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_ELECTRIC_FAST",type:"POKEMON_TYPE_ELECTRIC",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_FIGHTING_FAST",type:"POKEMON_TYPE_FIGHTING",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_FIRE_FAST",type:"POKEMON_TYPE_FIRE",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_FLYING_FAST",type:"POKEMON_TYPE_FLYING",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_GHOST_FAST",type:"POKEMON_TYPE_GHOST",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_GRASS_FAST",type:"POKEMON_TYPE_GRASS",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_GROUND_FAST",type:"POKEMON_TYPE_GROUND",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_ICE_FAST",type:"POKEMON_TYPE_ICE",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_POISON_FAST",type:"POKEMON_TYPE_POISON",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_PSYCHIC_FAST",type:"POKEMON_TYPE_PSYCHIC",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_ROCK_FAST",type:"POKEMON_TYPE_ROCK",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_STEEL_FAST",type:"POKEMON_TYPE_STEEL",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"HIDDEN_POWER_WATER_FAST",type:"POKEMON_TYPE_WATER",power:15.0,durationMs:1500,energyDelta:15,vfxName:"hidden_power_fast"},
+    {moveId:"DRAGON_TAIL_FAST",type:"POKEMON_TYPE_DRAGON",power:14.0,durationMs:1000,energyDelta:8,vfxName:"dragon_tail_fast"},
+    {moveId:"STEEL_WING_FAST",type:"POKEMON_TYPE_STEEL",power:14.0,durationMs:1000,energyDelta:8,vfxName:"steel_wing_fast"},
+    {moveId:"INCINERATE_FAST",type:"POKEMON_TYPE_FIRE",power:32.0,durationMs:2500,energyDelta:22,vfxName:"incinerate_fast"},
+    {moveId:"MAGICAL_LEAF_FAST",type:"POKEMON_TYPE_GRASS",power:17.0,durationMs:1500,energyDelta:17,vfxName:"magical_leaf_fast"},
+    {moveId:"SPLASH_FAST",type:"POKEMON_TYPE_WATER",power:null,durationMs:1500,energyDelta:17,vfxName:"splash_fast"},
+    {moveId:"POWDER_SNOW_FAST",type:"POKEMON_TYPE_ICE",power:6.0,durationMs:1000,energyDelta:15,vfxName:"powder_snow_fast"},
+    {moveId:"TAKE_DOWN_FAST",type:"POKEMON_TYPE_NORMAL",power:7.0,durationMs:1000,energyDelta:8,vfxName:"take_down_fast"},
+    {moveId:"SMACK_DOWN_FAST",type:"POKEMON_TYPE_ROCK",power:13.0,durationMs:1000,energyDelta:7,vfxName:"smack_down_fast"},
+    {moveId:"MUD_SLAP_FAST",type:"POKEMON_TYPE_GROUND",power:19.0,durationMs:1500,energyDelta:13,vfxName:"mud_slap_fast"},
+    {moveId:"INFESTATION_FAST",type:"POKEMON_TYPE_BUG",power:9.0,durationMs:1000,energyDelta:13,vfxName:"infestation_fast"},
+    {moveId:"PECK_FAST",type:"POKEMON_TYPE_FLYING",power:10.0,durationMs:1000,energyDelta:10,vfxName:"peck_fast"},
+    {moveId:"SAND_ATTACK_FAST",type:"POKEMON_TYPE_GROUND",power:4.0,durationMs:500,energyDelta:7,vfxName:"sand_attack"},
+    {moveId:"ACID_FAST",type:"POKEMON_TYPE_POISON",power:11.0,durationMs:1000,energyDelta:10,vfxName:"acid_fast"},
+    {moveId:"POISON_JAB_FAST",type:"POKEMON_TYPE_POISON",power:13.0,durationMs:1000,energyDelta:9,vfxName:"poison_jab_fast"},
+    {moveId:"LOCK_ON_FAST",type:"POKEMON_TYPE_NORMAL",power:2.0,durationMs:500,energyDelta:10,vfxName:"lock_on_fast"},
+    {moveId:"FAIRY_WIND_FAST",type:"POKEMON_TYPE_FAIRY",power:9.0,durationMs:1000,energyDelta:13,vfxName:"fairy_wind_fast"},
+    {moveId:"POISON_STING_FAST",type:"POKEMON_TYPE_POISON",power:4.0,durationMs:500,energyDelta:6,vfxName:"poison_sting_fast"}
+  ]
+};
+
+// console.log('✓ FAST_MOVES loaded:', Object.keys(FAST_MOVES).length, 'moves');
+
+// CHARGED MOVES DATABASE  
+// Source: https://fight.pokebattler.com/moves
+// Format: {type, power, durationMs, energy}
+// Note: energy is stored as positive cost (API returns negative energyDelta)
+const CHARGED_MOVES = {
+  "SEED_BOMB": {type: "POKEMON_TYPE_GRASS", power: 55.0, durationMs: 2000, energy: 33},
+  "SLUDGE_BOMB": {type: "POKEMON_TYPE_POISON", power: 85.0, durationMs: 2500, energy: 50},
+  "POWER_WHIP": {type: "POKEMON_TYPE_GRASS", power: 90.0, durationMs: 2500, energy: 50},
+  "RETURN": {type: "POKEMON_TYPE_NORMAL", power: 25.0, durationMs: 500, energy: 33},
+  "SOLAR_BEAM": {type: "POKEMON_TYPE_GRASS", power: 180.0, durationMs: 5000, energy: 100},
+  "SLUDGE": {type: "POKEMON_TYPE_POISON", power: 50.0, durationMs: 2000, energy: 33},
+  "PETAL_BLIZZARD": {type: "POKEMON_TYPE_GRASS", power: 110.0, durationMs: 2500, energy: 100},
+  "FRENZY_PLANT": {type: "POKEMON_TYPE_GRASS", power: 100.0, durationMs: 2500, energy: 50},
+  "FLAMETHROWER": {type: "POKEMON_TYPE_FIRE", power: 65.0, durationMs: 2000, energy: 50},
+  "FLAME_CHARGE": {type: "POKEMON_TYPE_FIRE", power: 70.0, durationMs: 4000, energy: 33},
+  "FLAME_BURST": {type: "POKEMON_TYPE_FIRE", power: 70.0, durationMs: 2500, energy: 50},
+  "FIRE_PUNCH": {type: "POKEMON_TYPE_FIRE", power: 50.0, durationMs: 2000, energy: 33},
+  "DRAGON_CLAW": {type: "POKEMON_TYPE_DRAGON", power: 45.0, durationMs: 1500, energy: 33},
+  "FIRE_BLAST": {type: "POKEMON_TYPE_FIRE", power: 140.0, durationMs: 4000, energy: 100},
+  "AIR_CUTTER": {type: "POKEMON_TYPE_FLYING", power: 55.0, durationMs: 2500, energy: 50},
+  "OVERHEAT": {type: "POKEMON_TYPE_FIRE", power: 160.0, durationMs: 4000, energy: 100},
+  "BLAST_BURN": {type: "POKEMON_TYPE_FIRE", power: 120.0, durationMs: 3500, energy: 50},
+  "AQUA_JET": {type: "POKEMON_TYPE_WATER", power: 45.0, durationMs: 2500, energy: 33},
+  "AQUA_TAIL": {type: "POKEMON_TYPE_WATER", power: 50.0, durationMs: 2000, energy: 33},
+  "WATER_PULSE": {type: "POKEMON_TYPE_WATER", power: 65.0, durationMs: 3000, energy: 50},
+  "ICE_BEAM": {type: "POKEMON_TYPE_ICE", power: 95.0, durationMs: 3500, energy: 50},
+  "HYDRO_PUMP": {type: "POKEMON_TYPE_WATER", power: 135.0, durationMs: 3500, energy: 100},
+  "FLASH_CANNON": {type: "POKEMON_TYPE_STEEL", power: 100.0, durationMs: 2500, energy: 100},
+  "SKULL_BASH": {type: "POKEMON_TYPE_NORMAL", power: 130.0, durationMs: 3000, energy: 100},
+  "HYDRO_CANNON": {type: "POKEMON_TYPE_WATER", power: 90.0, durationMs: 2000, energy: 50},
+  "STRUGGLE": {type: "POKEMON_TYPE_NORMAL", power: 35.0, durationMs: 2000, energy: null},
+  "BUG_BUZZ": {type: "POKEMON_TYPE_BUG", power: 95.0, durationMs: 3500, energy: 50},
+  "SIGNAL_BEAM": {type: "POKEMON_TYPE_BUG", power: 75.0, durationMs: 3000, energy: 50},
+  "PSYCHIC": {type: "POKEMON_TYPE_PSYCHIC", power: 95.0, durationMs: 3000, energy: 50},
+  "DISCHARGE": {type: "POKEMON_TYPE_ELECTRIC", power: 65.0, durationMs: 2500, energy: 33},
+  "THUNDERBOLT": {type: "POKEMON_TYPE_ELECTRIC", power: 80.0, durationMs: 2500, energy: 50},
+  "WILD_CHARGE": {type: "POKEMON_TYPE_ELECTRIC", power: 90.0, durationMs: 2500, energy: 50},
+  "DRAINING_KISS": {type: "POKEMON_TYPE_FAIRY", power: 60.0, durationMs: 2500, energy: 50},
+  "METEOR_MASH": {type: "POKEMON_TYPE_STEEL", power: 100.0, durationMs: 2500, energy: 50},
+  "SURF": {type: "POKEMON_TYPE_WATER", power: 60.0, durationMs: 1500, energy: 50},
+  "THUNDER": {type: "POKEMON_TYPE_ELECTRIC", power: 100.0, durationMs: 2500, energy: 100},
+  "THUNDER_PUNCH": {type: "POKEMON_TYPE_ELECTRIC", power: 50.0, durationMs: 2000, energy: 33},
+  "BRICK_BREAK": {type: "POKEMON_TYPE_FIGHTING", power: 40.0, durationMs: 1500, energy: 33},
+  "TRAILBLAZE": {type: "POKEMON_TYPE_GRASS", power: 65.0, durationMs: 2000, energy: 50},
+  "DARK_PULSE": {type: "POKEMON_TYPE_DARK", power: 80.0, durationMs: 3000, energy: 50},
+  "NIGHT_SLASH": {type: "POKEMON_TYPE_DARK", power: 45.0, durationMs: 2000, energy: 33},
+  "FOUL_PLAY": {type: "POKEMON_TYPE_DARK", power: 70.0, durationMs: 2000, energy: 50},
+  "BODY_SLAM": {type: "POKEMON_TYPE_NORMAL", power: 50.0, durationMs: 2000, energy: 33},
+  "FLAME_WHEEL": {type: "POKEMON_TYPE_FIRE", power: 55.0, durationMs: 2500, energy: 50},
+  "CRUNCH": {type: "POKEMON_TYPE_DARK", power: 65.0, durationMs: 3000, energy: 33},
+  "PSYCHIC_FANGS": {type: "POKEMON_TYPE_PSYCHIC", power: 25.0, durationMs: 1000, energy: 33},
+  "SCORCHING_SANDS": {type: "POKEMON_TYPE_GROUND", power: 90.0, durationMs: 3000, energy: 50},
+  "BULLDOZE": {type: "POKEMON_TYPE_GROUND", power: 80.0, durationMs: 3500, energy: 50},
+  "PSYSHOCK": {type: "POKEMON_TYPE_PSYCHIC", power: 60.0, durationMs: 2500, energy: 33},
+  "SHADOW_BALL": {type: "POKEMON_TYPE_GHOST", power: 100.0, durationMs: 3000, energy: 50},
+  "PSYBEAM": {type: "POKEMON_TYPE_PSYCHIC", power: 65.0, durationMs: 3000, energy: 50},
+  "DAZZLING_GLEAM": {type: "POKEMON_TYPE_FAIRY", power: 100.0, durationMs: 3500, energy: 50},
+  "FOCUS_BLAST": {type: "POKEMON_TYPE_FIGHTING", power: 140.0, durationMs: 3500, energy: 100},
+  "FUTURESIGHT": {type: "POKEMON_TYPE_PSYCHIC", power: 115.0, durationMs: 2500, energy: 100},
+  "CROSS_CHOP": {type: "POKEMON_TYPE_FIGHTING", power: 50.0, durationMs: 1500, energy: 50},
+  "LOW_SWEEP": {type: "POKEMON_TYPE_FIGHTING", power: 40.0, durationMs: 2000, energy: 33},
+  "SUBMISSION": {type: "POKEMON_TYPE_FIGHTING", power: 55.0, durationMs: 2000, energy: 50},
+  "DYNAMIC_PUNCH": {type: "POKEMON_TYPE_FIGHTING", power: 85.0, durationMs: 2500, energy: 50},
+  "ROCK_SLIDE": {type: "POKEMON_TYPE_ROCK", power: 75.0, durationMs: 2500, energy: 50},
+  "CLOSE_COMBAT": {type: "POKEMON_TYPE_FIGHTING", power: 105.0, durationMs: 2500, energy: 100},
+  "HEAVY_SLAM": {type: "POKEMON_TYPE_STEEL", power: 70.0, durationMs: 2000, energy: 50},
+  "PAYBACK": {type: "POKEMON_TYPE_DARK", power: 95.0, durationMs: 2000, energy: 100},
+  "STONE_EDGE": {type: "POKEMON_TYPE_ROCK", power: 105.0, durationMs: 2500, energy: 100},
+  "NIGHT_SHADE": {type: "POKEMON_TYPE_GHOST", power: 60.0, durationMs: 2500, energy: 50},
+  "OMINOUS_WIND": {type: "POKEMON_TYPE_GHOST", power: 55.0, durationMs: 2500, energy: 33},
+  "ICE_PUNCH": {type: "POKEMON_TYPE_ICE", power: 50.0, durationMs: 2000, energy: 33},
+  "SHADOW_PUNCH": {type: "POKEMON_TYPE_GHOST", power: 35.0, durationMs: 1500, energy: 33},
+  "DRAIN_PUNCH": {type: "POKEMON_TYPE_FIGHTING", power: 50.0, durationMs: 2500, energy: 33},
+  "SLUDGE_WAVE": {type: "POKEMON_TYPE_POISON", power: 105.0, durationMs: 3000, energy: 100},
+  "VICE_GRIP": {type: "POKEMON_TYPE_NORMAL", power: 35.0, durationMs: 2000, energy: 33},
+  "BUBBLE_BEAM": {type: "POKEMON_TYPE_WATER", power: 45.0, durationMs: 2000, energy: 33},
+  "RAZOR_SHELL": {type: "POKEMON_TYPE_WATER", power: 55.0, durationMs: 1500, energy: 33},
+  "X_SCISSOR": {type: "POKEMON_TYPE_BUG", power: 45.0, durationMs: 1500, energy: 33},
+  "CRABHAMMER": {type: "POKEMON_TYPE_WATER", power: 85.0, durationMs: 2000, energy: 50},
+  "BLAZE_KICK": {type: "POKEMON_TYPE_FIRE", power: 40.0, durationMs: 1000, energy: 33},
+  "STOMP": {type: "POKEMON_TYPE_NORMAL", power: 50.0, durationMs: 1500, energy: 50},
+  "POWER_UP_PUNCH": {type: "POKEMON_TYPE_FIGHTING", power: 50.0, durationMs: 2000, energy: 33},
+  "HYPER_BEAM": {type: "POKEMON_TYPE_NORMAL", power: 150.0, durationMs: 4000, energy: 100},
+  "BLIZZARD": {type: "POKEMON_TYPE_ICE", power: 130.0, durationMs: 3000, energy: 100},
+  "SPARKLING_ARIA": {type: "POKEMON_TYPE_WATER", power: 85.0, durationMs: 3000, energy: 33},
+  "DRAGON_PULSE": {type: "POKEMON_TYPE_DRAGON", power: 90.0, durationMs: 3500, energy: 50},
+  "DIG": {type: "POKEMON_TYPE_GROUND", power: 100.0, durationMs: 4500, energy: 50},
+  "SWIFT": {type: "POKEMON_TYPE_NORMAL", power: 65.0, durationMs: 3000, energy: 50},
+  "LAST_RESORT": {type: "POKEMON_TYPE_NORMAL", power: 90.0, durationMs: 3000, energy: 50},
+  "LIQUIDATION": {type: "POKEMON_TYPE_WATER", power: 70.0, durationMs: 3000, energy: 33},
+  "SCALD": {type: "POKEMON_TYPE_WATER", power: 75.0, durationMs: 3500, energy: 50},
+  "ZAP_CANNON": {type: "POKEMON_TYPE_ELECTRIC", power: 140.0, durationMs: 3500, energy: 100},
+  "SUPER_POWER": {type: "POKEMON_TYPE_FIGHTING", power: 85.0, durationMs: 3000, energy: 50},
+  "HEAT_WAVE": {type: "POKEMON_TYPE_FIRE", power: 95.0, durationMs: 3000, energy: 100},
+  "LEAF_BLADE": {type: "POKEMON_TYPE_GRASS", power: 70.0, durationMs: 2500, energy: 33},
+  "ENERGY_BALL": {type: "POKEMON_TYPE_GRASS", power: 90.0, durationMs: 4000, energy: 50},
+  "ICY_WIND": {type: "POKEMON_TYPE_ICE", power: 65.0, durationMs: 3500, energy: 33},
+  "AVALANCHE": {type: "POKEMON_TYPE_ICE", power: 85.0, durationMs: 2500, energy: 50},
+  "MOONBLAST": {type: "POKEMON_TYPE_FAIRY", power: 130.0, durationMs: 4000, energy: 100},
+  "ANCIENT_POWER": {type: "POKEMON_TYPE_ROCK", power: 70.0, durationMs: 3500, energy: 33},
+  "ROCK_BLAST": {type: "POKEMON_TYPE_ROCK", power: 50.0, durationMs: 2000, energy: 33},
+  "ROCK_TOMB": {type: "POKEMON_TYPE_ROCK", power: 65.0, durationMs: 3000, energy: 50},
+  "BRINE": {type: "POKEMON_TYPE_WATER", power: 65.0, durationMs: 2500, energy: 50},
+  "EARTHQUAKE": {type: "POKEMON_TYPE_GROUND", power: 140.0, durationMs: 3500, energy: 100},
+  "OUTRAGE": {type: "POKEMON_TYPE_DRAGON", power: 110.0, durationMs: 4000, energy: 50},
+  "TRIPLE_AXEL": {type: "POKEMON_TYPE_ICE", power: 60.0, durationMs: 2000, energy: 33},
+  "HURRICANE": {type: "POKEMON_TYPE_FLYING", power: 105.0, durationMs: 2500, energy: 100},
+  "DRILL_PECK": {type: "POKEMON_TYPE_FLYING", power: 70.0, durationMs: 2500, energy: 33},
+  "SKY_ATTACK": {type: "POKEMON_TYPE_FLYING", power: 80.0, durationMs: 2000, energy: 50},
+  "GYRO_BALL": {type: "POKEMON_TYPE_STEEL", power: 85.0, durationMs: 3500, energy: 50},
+  "AURA_SPHERE": {type: "POKEMON_TYPE_FIGHTING", power: 100.0, durationMs: 2000, energy: 50},
+  "IRON_HEAD": {type: "POKEMON_TYPE_STEEL", power: 60.0, durationMs: 2000, energy: 50},
+  "FLY": {type: "POKEMON_TYPE_FLYING", power: 90.0, durationMs: 2000, energy: 50},
+  "AEROBLAST_PLUS_PLUS": {type: "POKEMON_TYPE_FLYING", power: 225.0, durationMs: 3500, energy: 100},
+  "AEROBLAST": {type: "POKEMON_TYPE_FLYING", power: 180.0, durationMs: 3500, energy: 100},
+  "BRAVE_BIRD": {type: "POKEMON_TYPE_FLYING", power: 130.0, durationMs: 2000, energy: 100},
+  "SACRED_FIRE": {type: "POKEMON_TYPE_FIRE", power: 120.0, durationMs: 2500, energy: 100},
+  "SACRED_FIRE_PLUS_PLUS": {type: "POKEMON_TYPE_FIRE", power: 155.0, durationMs: 2500, energy: 100},
+  "SHADOW_SNEAK": {type: "POKEMON_TYPE_GHOST", power: 50.0, durationMs: 3000, energy: 33},
+  "DISARMING_VOICE": {type: "POKEMON_TYPE_FAIRY", power: 70.0, durationMs: 4000, energy: 33},
+  "SYNCHRONOISE": {type: "POKEMON_TYPE_PSYCHIC", power: 80.0, durationMs: 2500, energy: 50},
+  "POWER_GEM": {type: "POKEMON_TYPE_ROCK", power: 80.0, durationMs: 3000, energy: 50},
+  "AURORA_BEAM": {type: "POKEMON_TYPE_ICE", power: 80.0, durationMs: 3500, energy: 50},
+  "ICICLE_SPEAR": {type: "POKEMON_TYPE_ICE", power: 55.0, durationMs: 2000, energy: 33},
+  "MIST_BALL": {type: "POKEMON_TYPE_PSYCHIC", power: 105.0, durationMs: 2000, energy: 100},
+  "LUSTER_PURGE": {type: "POKEMON_TYPE_PSYCHIC", power: 100.0, durationMs: 1500, energy: 100},
+  "AERIAL_ACE": {type: "POKEMON_TYPE_FLYING", power: 55.0, durationMs: 2500, energy: 33},
+  "METEOR_BEAM": {type: "POKEMON_TYPE_ROCK", power: 140.0, durationMs: 2000, energy: 100},
+  "DRILL_RUN": {type: "POKEMON_TYPE_GROUND", power: 85.0, durationMs: 3000, energy: 50},
+  "GUNK_SHOT": {type: "POKEMON_TYPE_POISON", power: 130.0, durationMs: 3000, energy: 100},
+  "ACID_SPRAY": {type: "POKEMON_TYPE_POISON", power: 20.0, durationMs: 3000, energy: 50},
+  "GRASS_KNOT": {type: "POKEMON_TYPE_GRASS", power: 90.0, durationMs: 2500, energy: 50},
+  "HIGH_JUMP_KICK": {type: "POKEMON_TYPE_FIGHTING", power: 90.0, durationMs: 1500, energy: 100},
+  "BRUTAL_SWING": {type: "POKEMON_TYPE_DARK", power: 65.0, durationMs: 2000, energy: 33},
+  "EARTH_POWER": {type: "POKEMON_TYPE_GROUND", power: 100.0, durationMs: 3500, energy: 50},
+  "DRUM_BEATING": {type: "POKEMON_TYPE_GRASS", power: 115.0, durationMs: 4500, energy: 33},
+  "PLAY_ROUGH": {type: "POKEMON_TYPE_FAIRY", power: 90.0, durationMs: 3000, energy: 50},
+  "MEGAHORN": {type: "POKEMON_TYPE_BUG", power: 105.0, durationMs: 2000, energy: 100},
+  "BOOMBURST": {type: "POKEMON_TYPE_NORMAL", power: 150.0, durationMs: 2500, energy: 100},
+  "FELL_STINGER": {type: "POKEMON_TYPE_BUG", power: 45.0, durationMs: 2000, energy: 33},
+  "MIRROR_COAT": {type: "POKEMON_TYPE_PSYCHIC", power: 60.0, durationMs: 2500, energy: 50},
+  "WRAP": {type: "POKEMON_TYPE_NORMAL", power: 60.0, durationMs: 3000, energy: 33},
+  "TWISTER": {type: "POKEMON_TYPE_DRAGON", power: 50.0, durationMs: 3000, energy: 33},
+  "HORN_ATTACK": {type: "POKEMON_TYPE_NORMAL", power: 45.0, durationMs: 2000, energy: 33},
+  "BREAKING_SWIPE": {type: "POKEMON_TYPE_DRAGON", power: 45.0, durationMs: 1000, energy: 33},
+  "ROCK_WRECKER": {type: "POKEMON_TYPE_ROCK", power: 110.0, durationMs: 3500, energy: 50},
+  "DRACO_METEOR": {type: "POKEMON_TYPE_DRAGON", power: 150.0, durationMs: 3500, energy: 100}
+};
+
+// console.log('✓ CHARGED_MOVES loaded:', Object.keys(CHARGED_MOVES).length, 'moves');
+
+// ─── POKEMON DATABASES ────────────────────────────────────
+
+// POKEDEX - All available Pokemon for player roster
+// Source: https://fight.pokebattler.com/pokemon
+// Format: {pokemonId, type, type2, stats:{baseAttack, baseDefense, baseStamina}, quickMoves[], canGmax, isLegendaryOrMythical}
+const POKEDEX = {
+  "pokemon": [
+    {pokemonId:"BULBASAUR",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:118,baseDefense:111,baseStamina:128},quickMoves:["VINE_WHIP_FAST","TACKLE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"IVYSAUR",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:151,baseDefense:143,baseStamina:155},quickMoves:["VINE_WHIP_FAST","RAZOR_LEAF_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"VENUSAUR",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:198,baseDefense:189,baseStamina:190},quickMoves:["VINE_WHIP_FAST","RAZOR_LEAF_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"CHARMANDER",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:116,baseDefense:93,baseStamina:118},quickMoves:["EMBER_FAST","SCRATCH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"CHARMELEON",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:158,baseDefense:126,baseStamina:151},quickMoves:["EMBER_FAST","FIRE_FANG_FAST","SCRATCH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"CHARIZARD",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:223,baseDefense:173,baseStamina:186},quickMoves:["AIR_SLASH_FAST","FIRE_SPIN_FAST","DRAGON_BREATH_FAST","EMBER_FAST","WING_ATTACK_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"SQUIRTLE",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:94,baseDefense:121,baseStamina:127},quickMoves:["TACKLE_FAST","BUBBLE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"WARTORTLE",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:126,baseDefense:155,baseStamina:153},quickMoves:["BITE_FAST","WATER_GUN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"BLASTOISE",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:171,baseDefense:207,baseStamina:188},quickMoves:["BITE_FAST","WATER_GUN_FAST","ROLLOUT_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"CATERPIE",type:"POKEMON_TYPE_BUG",type2:"POKEMON_TYPE_BUG",stats:{baseAttack:55,baseDefense:55,baseStamina:128},quickMoves:["BUG_BITE_FAST","TACKLE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"METAPOD",type:"POKEMON_TYPE_BUG",type2:"POKEMON_TYPE_BUG",stats:{baseAttack:45,baseDefense:80,baseStamina:137},quickMoves:["BUG_BITE_FAST","TACKLE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"BUTTERFREE",type:"POKEMON_TYPE_BUG",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:167,baseDefense:137,baseStamina:155},quickMoves:["CONFUSION_FAST","STRUGGLE_BUG_FAST","BUG_BITE_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"PIKACHU",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_ELECTRIC",stats:{baseAttack:112,baseDefense:96,baseStamina:111},quickMoves:["THUNDER_SHOCK_FAST","QUICK_ATTACK_FAST","PRESENT_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"RAICHU",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_ELECTRIC",stats:{baseAttack:193,baseDefense:151,baseStamina:155},quickMoves:["THUNDER_SHOCK_FAST","SPARK_FAST","VOLT_SWITCH_FAST","CHARM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"MEOWTH",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:92,baseDefense:78,baseStamina:120},quickMoves:["BITE_FAST","SCRATCH_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"GROWLITHE",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:136,baseDefense:93,baseStamina:146},quickMoves:["BITE_FAST","EMBER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ARCANINE",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:227,baseDefense:166,baseStamina:207},quickMoves:["FIRE_FANG_FAST","SNARL_FAST","THUNDER_FANG_FAST","BITE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ABRA",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:195,baseDefense:82,baseStamina:93},quickMoves:["ZEN_HEADBUTT_FAST","CHARGE_BEAM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"KADABRA",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:232,baseDefense:117,baseStamina:120},quickMoves:["PSYCHO_CUT_FAST","CONFUSION_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ALAKAZAM",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:271,baseDefense:167,baseStamina:146},quickMoves:["PSYCHO_CUT_FAST","CONFUSION_FAST","COUNTER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"MACHOP",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:137,baseDefense:82,baseStamina:172},quickMoves:["KARATE_CHOP_FAST","ROCK_SMASH_FAST","LOW_KICK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"MACHOKE",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:177,baseDefense:125,baseStamina:190},quickMoves:["LOW_KICK_FAST","KARATE_CHOP_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"MACHAMP",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:234,baseDefense:159,baseStamina:207},quickMoves:["BULLET_PUNCH_FAST","COUNTER_FAST","KARATE_CHOP_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"GASTLY",type:"POKEMON_TYPE_GHOST",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:186,baseDefense:67,baseStamina:102},quickMoves:["LICK_FAST","ASTONISH_FAST","SUCKER_PUNCH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"HAUNTER",type:"POKEMON_TYPE_GHOST",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:223,baseDefense:107,baseStamina:128},quickMoves:["SHADOW_CLAW_FAST","ASTONISH_FAST","LICK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"GENGAR",type:"POKEMON_TYPE_GHOST",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:261,baseDefense:149,baseStamina:155},quickMoves:["SUCKER_PUNCH_FAST","SHADOW_CLAW_FAST","HEX_FAST","LICK_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"KRABBY",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:181,baseDefense:124,baseStamina:102},quickMoves:["MUD_SHOT_FAST","BUBBLE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"KINGLER",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:240,baseDefense:181,baseStamina:146},quickMoves:["METAL_CLAW_FAST","BUBBLE_FAST","MUD_SHOT_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"HITMONLEE",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:224,baseDefense:181,baseStamina:137},quickMoves:["LOW_KICK_FAST","ROCK_SMASH_FAST","DOUBLE_KICK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"HITMONCHAN",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:193,baseDefense:197,baseStamina:137},quickMoves:["BULLET_PUNCH_FAST","COUNTER_FAST","ROCK_SMASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"CHANSEY",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:60,baseDefense:128,baseStamina:487},quickMoves:["POUND_FAST","ZEN_HEADBUTT_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"BLISSEY",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:129,baseDefense:169,baseStamina:496},quickMoves:["POUND_FAST","ZEN_HEADBUTT_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"LAPRAS",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_ICE",stats:{baseAttack:165,baseDefense:174,baseStamina:277},quickMoves:["FROST_BREATH_FAST","WATER_GUN_FAST","PSYWAVE_FAST","ICE_SHARD_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"EEVEE",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:104,baseDefense:114,baseStamina:146},quickMoves:["QUICK_ATTACK_FAST","TACKLE_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"VAPOREON",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:205,baseDefense:161,baseStamina:277},quickMoves:["WATER_GUN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"JOLTEON",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_ELECTRIC",stats:{baseAttack:232,baseDefense:182,baseStamina:163},quickMoves:["THUNDER_SHOCK_FAST","VOLT_SWITCH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"FLAREON",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:246,baseDefense:179,baseStamina:163},quickMoves:["EMBER_FAST","FIRE_SPIN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ESPEON",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:261,baseDefense:175,baseStamina:163},quickMoves:["ZEN_HEADBUTT_FAST","CONFUSION_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"UMBREON",type:"POKEMON_TYPE_DARK",type2:"POKEMON_TYPE_DARK",stats:{baseAttack:126,baseDefense:240,baseStamina:216},quickMoves:["FEINT_ATTACK_FAST","SNARL_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"LEAFEON",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_GRASS",stats:{baseAttack:216,baseDefense:219,baseStamina:163},quickMoves:["RAZOR_LEAF_FAST","QUICK_ATTACK_FAST","BULLET_SEED_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"GLACEON",type:"POKEMON_TYPE_ICE",type2:"POKEMON_TYPE_ICE",stats:{baseAttack:238,baseDefense:205,baseStamina:163},quickMoves:["ICE_SHARD_FAST","FROST_BREATH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"SYLVEON",type:"POKEMON_TYPE_FAIRY",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:203,baseDefense:205,baseStamina:216},quickMoves:["QUICK_ATTACK_FAST","CHARM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"OMANYTE",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:155,baseDefense:153,baseStamina:111},quickMoves:["MUD_SHOT_FAST","WATER_GUN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"OMASTAR",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:207,baseDefense:201,baseStamina:172},quickMoves:["MUD_SHOT_FAST","WATER_GUN_FAST","ROCK_THROW_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"KABUTO",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:148,baseDefense:140,baseStamina:102},quickMoves:["MUD_SHOT_FAST","SCRATCH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"KABUTOPS",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:220,baseDefense:186,baseStamina:155},quickMoves:["MUD_SHOT_FAST","ROCK_SMASH_FAST","WATERFALL_FAST","FURY_CUTTER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"SNORLAX",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:190,baseDefense:169,baseStamina:330},quickMoves:["LICK_FAST","ZEN_HEADBUTT_FAST","YAWN_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"ARTICUNO",type:"POKEMON_TYPE_ICE",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:192,baseDefense:236,baseStamina:207},quickMoves:["ICE_SHARD_FAST","FROST_BREATH_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"ZAPDOS",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:253,baseDefense:185,baseStamina:207},quickMoves:["CHARGE_BEAM_FAST","THUNDER_SHOCK_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"MOLTRES",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:251,baseDefense:181,baseStamina:207},quickMoves:["WING_ATTACK_FAST","FIRE_SPIN_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"SHUCKLE",type:"POKEMON_TYPE_BUG",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:17,baseDefense:396,baseStamina:85},quickMoves:["ROCK_THROW_FAST","STRUGGLE_BUG_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"RAIKOU",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_ELECTRIC",stats:{baseAttack:241,baseDefense:195,baseStamina:207},quickMoves:["THUNDER_SHOCK_FAST","VOLT_SWITCH_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"ENTEI",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:235,baseDefense:171,baseStamina:251},quickMoves:["FIRE_FANG_FAST","FIRE_SPIN_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"SUICUNE",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:180,baseDefense:235,baseStamina:225},quickMoves:["WATER_GUN_FAST","EXTRASENSORY_FAST","SNARL_FAST","ICE_FANG_FAST","HIDDEN_POWER_FAST","HIDDEN_POWER_BUG_FAST","HIDDEN_POWER_DARK_FAST","HIDDEN_POWER_DRAGON_FAST","HIDDEN_POWER_ELECTRIC_FAST","HIDDEN_POWER_FIGHTING_FAST","HIDDEN_POWER_FIRE_FAST","HIDDEN_POWER_FLYING_FAST","HIDDEN_POWER_GHOST_FAST","HIDDEN_POWER_GRASS_FAST","HIDDEN_POWER_GROUND_FAST","HIDDEN_POWER_ICE_FAST","HIDDEN_POWER_POISON_FAST","HIDDEN_POWER_PSYCHIC_FAST","HIDDEN_POWER_ROCK_FAST","HIDDEN_POWER_STEEL_FAST","HIDDEN_POWER_WATER_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"LUGIA",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:193,baseDefense:310,baseStamina:235},quickMoves:["DRAGON_TAIL_FAST","EXTRASENSORY_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"HO_OH",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:239,baseDefense:244,baseStamina:214},quickMoves:["STEEL_WING_FAST","EXTRASENSORY_FAST","HIDDEN_POWER_FAST","HIDDEN_POWER_BUG_FAST","HIDDEN_POWER_DARK_FAST","HIDDEN_POWER_DRAGON_FAST","HIDDEN_POWER_ELECTRIC_FAST","HIDDEN_POWER_FIGHTING_FAST","HIDDEN_POWER_FIRE_FAST","HIDDEN_POWER_FLYING_FAST","HIDDEN_POWER_GHOST_FAST","HIDDEN_POWER_GRASS_FAST","HIDDEN_POWER_GROUND_FAST","HIDDEN_POWER_ICE_FAST","HIDDEN_POWER_POISON_FAST","HIDDEN_POWER_PSYCHIC_FAST","HIDDEN_POWER_ROCK_FAST","HIDDEN_POWER_STEEL_FAST","HIDDEN_POWER_WATER_FAST","INCINERATE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"RALTS",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:79,baseDefense:59,baseStamina:99},quickMoves:["CONFUSION_FAST","CHARGE_BEAM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"KIRLIA",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:117,baseDefense:90,baseStamina:116},quickMoves:["CONFUSION_FAST","CHARGE_BEAM_FAST","MAGICAL_LEAF_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"GARDEVOIR",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:237,baseDefense:195,baseStamina:169},quickMoves:["CONFUSION_FAST","CHARGE_BEAM_FAST","CHARM_FAST","MAGICAL_LEAF_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"GALLADE",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:237,baseDefense:195,baseStamina:169},quickMoves:["LOW_KICK_FAST","PSYCHO_CUT_FAST","CONFUSION_FAST","CHARM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"SABLEYE",type:"POKEMON_TYPE_DARK",type2:"POKEMON_TYPE_GHOST",stats:{baseAttack:141,baseDefense:136,baseStamina:137},quickMoves:["SHADOW_CLAW_FAST","FEINT_ATTACK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"WAILMER",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:136,baseDefense:68,baseStamina:277},quickMoves:["WATER_GUN_FAST","SPLASH_FAST","ROLLOUT_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"WAILORD",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:175,baseDefense:87,baseStamina:347},quickMoves:["WATER_GUN_FAST","ZEN_HEADBUTT_FAST","ROLLOUT_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"SPHEAL",type:"POKEMON_TYPE_ICE",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:95,baseDefense:90,baseStamina:172},quickMoves:["WATER_GUN_FAST","ROCK_SMASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"SEALEO",type:"POKEMON_TYPE_ICE",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:137,baseDefense:132,baseStamina:207},quickMoves:["WATER_GUN_FAST","POWDER_SNOW_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"WALREIN",type:"POKEMON_TYPE_ICE",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:182,baseDefense:176,baseStamina:242},quickMoves:["FROST_BREATH_FAST","WATERFALL_FAST","POWDER_SNOW_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"BELDUM",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:96,baseDefense:132,baseStamina:120},quickMoves:["TAKE_DOWN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"METANG",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:138,baseDefense:176,baseStamina:155},quickMoves:["FURY_CUTTER_FAST","METAL_CLAW_FAST","ZEN_HEADBUTT_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"METAGROSS",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:257,baseDefense:228,baseStamina:190},quickMoves:["FURY_CUTTER_FAST","BULLET_PUNCH_FAST","ZEN_HEADBUTT_FAST","SHADOW_CLAW_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"LATIAS",type:"POKEMON_TYPE_DRAGON",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:228,baseDefense:246,baseStamina:190},quickMoves:["DRAGON_BREATH_FAST","ZEN_HEADBUTT_FAST","CHARM_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"LATIOS",type:"POKEMON_TYPE_DRAGON",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:268,baseDefense:212,baseStamina:190},quickMoves:["DRAGON_BREATH_FAST","ZEN_HEADBUTT_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"PIDOVE",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:98,baseDefense:80,baseStamina:137},quickMoves:["QUICK_ATTACK_FAST","AIR_SLASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"TRANQUILL",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:144,baseDefense:107,baseStamina:158},quickMoves:["STEEL_WING_FAST","AIR_SLASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"UNFEZANT",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:226,baseDefense:146,baseStamina:190},quickMoves:["STEEL_WING_FAST","AIR_SLASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ROGGENROLA",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:121,baseDefense:110,baseStamina:146},quickMoves:["TACKLE_FAST","SMACK_DOWN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"BOLDORE",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:174,baseDefense:143,baseStamina:172},quickMoves:["MUD_SLAP_FAST","SMACK_DOWN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"GIGALITH",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:226,baseDefense:201,baseStamina:198},quickMoves:["MUD_SLAP_FAST","SMACK_DOWN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"WOOBAT",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:107,baseDefense:85,baseStamina:163},quickMoves:["CONFUSION_FAST","AIR_SLASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"SWOOBAT",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:161,baseDefense:119,baseStamina:167},quickMoves:["CONFUSION_FAST","AIR_SLASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"DRILBUR",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_GROUND",stats:{baseAttack:154,baseDefense:85,baseStamina:155},quickMoves:["SCRATCH_FAST","MUD_SLAP_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"EXCADRILL",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:255,baseDefense:129,baseStamina:242},quickMoves:["MUD_SHOT_FAST","METAL_CLAW_FAST","MUD_SLAP_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"DARUMAKA",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:153,baseDefense:86,baseStamina:172},quickMoves:["TACKLE_FAST","FIRE_FANG_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"DARMANITAN",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:263,baseDefense:114,baseStamina:233},quickMoves:["TACKLE_FAST","FIRE_FANG_FAST","INCINERATE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"TRUBBISH",type:"POKEMON_TYPE_POISON",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:96,baseDefense:122,baseStamina:137},quickMoves:["POUND_FAST","TAKE_DOWN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"GARBODOR",type:"POKEMON_TYPE_POISON",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:181,baseDefense:164,baseStamina:190},quickMoves:["INFESTATION_FAST","TAKE_DOWN_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"CRYOGONAL",type:"POKEMON_TYPE_ICE",type2:"POKEMON_TYPE_ICE",stats:{baseAttack:190,baseDefense:218,baseStamina:190},quickMoves:["ICE_SHARD_FAST","FROST_BREATH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"INKAY",type:"POKEMON_TYPE_DARK",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:98,baseDefense:95,baseStamina:142},quickMoves:["PECK_FAST","TACKLE_FAST","PSYWAVE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"MALAMAR",type:"POKEMON_TYPE_DARK",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:177,baseDefense:165,baseStamina:200},quickMoves:["PECK_FAST","PSYCHO_CUT_FAST","PSYWAVE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"BOUNSWEET",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_GRASS",stats:{baseAttack:55,baseDefense:69,baseStamina:123},quickMoves:["RAZOR_LEAF_FAST","CHARM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"STEENEE",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_GRASS",stats:{baseAttack:78,baseDefense:94,baseStamina:141},quickMoves:["RAZOR_LEAF_FAST","CHARM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"TSAREENA",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_GRASS",stats:{baseAttack:222,baseDefense:195,baseStamina:176},quickMoves:["RAZOR_LEAF_FAST","CHARM_FAST","MAGICAL_LEAF_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"PASSIMIAN",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:222,baseDefense:160,baseStamina:225},quickMoves:["ROCK_SMASH_FAST","COUNTER_FAST","TAKE_DOWN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"DRAMPA",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:231,baseDefense:164,baseStamina:186},quickMoves:["DRAGON_BREATH_FAST","EXTRASENSORY_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"GROOKEY",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_GRASS",stats:{baseAttack:122,baseDefense:91,baseStamina:137},quickMoves:["RAZOR_LEAF_FAST","SCRATCH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"THWACKEY",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_GRASS",stats:{baseAttack:165,baseDefense:134,baseStamina:172},quickMoves:["RAZOR_LEAF_FAST","SCRATCH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"RILLABOOM",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_GRASS",stats:{baseAttack:239,baseDefense:168,baseStamina:225},quickMoves:["RAZOR_LEAF_FAST","SCRATCH_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"SCORBUNNY",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:132,baseDefense:79,baseStamina:137},quickMoves:["TACKLE_FAST","FIRE_SPIN_FAST","EMBER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"RABOOT",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:170,baseDefense:125,baseStamina:163},quickMoves:["TACKLE_FAST","FIRE_SPIN_FAST","EMBER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"CINDERACE",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:238,baseDefense:163,baseStamina:190},quickMoves:["TACKLE_FAST","FIRE_SPIN_FAST","EMBER_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"SOBBLE",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:132,baseDefense:79,baseStamina:137},quickMoves:["POUND_FAST","WATER_GUN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"DRIZZILE",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:186,baseDefense:113,baseStamina:163},quickMoves:["POUND_FAST","WATER_GUN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"INTELEON",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:262,baseDefense:142,baseStamina:172},quickMoves:["POUND_FAST","WATER_GUN_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"SKWOVET",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:95,baseDefense:86,baseStamina:172},quickMoves:["BITE_FAST","TACKLE_FAST","BULLET_SEED_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"GREEDENT",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:160,baseDefense:156,baseStamina:260},quickMoves:["BITE_FAST","MUD_SHOT_FAST","TACKLE_FAST","BULLET_SEED_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ROOKIDEE",type:"POKEMON_TYPE_FLYING",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:88,baseDefense:67,baseStamina:116},quickMoves:["PECK_FAST","AIR_SLASH_FAST","SAND_ATTACK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"CORVISQUIRE",type:"POKEMON_TYPE_FLYING",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:129,baseDefense:110,baseStamina:169},quickMoves:["PECK_FAST","AIR_SLASH_FAST","SAND_ATTACK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"CORVIKNIGHT",type:"POKEMON_TYPE_FLYING",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:163,baseDefense:192,baseStamina:221},quickMoves:["STEEL_WING_FAST","AIR_SLASH_FAST","SAND_ATTACK_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"WOOLOO",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:76,baseDefense:97,baseStamina:123},quickMoves:["TACKLE_FAST","TAKE_DOWN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"DUBWOOL",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:159,baseDefense:198,baseStamina:176},quickMoves:["TACKLE_FAST","TAKE_DOWN_FAST","DOUBLE_KICK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"TOXEL",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:97,baseDefense:65,baseStamina:120},quickMoves:["ACID_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"TOXTRICITY",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:224,baseDefense:140,baseStamina:181},quickMoves:["SPARK_FAST","POISON_JAB_FAST","ACID_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"HATENNA",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:98,baseDefense:93,baseStamina:123},quickMoves:["CONFUSION_FAST","CHARM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"HATTREM",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:153,baseDefense:133,baseStamina:149},quickMoves:["CONFUSION_FAST","CHARM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"HATTERENE",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:237,baseDefense:182,baseStamina:149},quickMoves:["PSYCHO_CUT_FAST","CONFUSION_FAST","CHARM_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"GRIMMSNARL",type:"POKEMON_TYPE_DARK",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:227,baseDefense:139,baseStamina:216},quickMoves:["BITE_FAST","SUCKER_PUNCH_FAST","LOW_KICK_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"FALINKS",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:193,baseDefense:170,baseStamina:163},quickMoves:["ROCK_SMASH_FAST","COUNTER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"DURALUDON",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:239,baseDefense:185,baseStamina:172},quickMoves:["METAL_CLAW_FAST","DRAGON_TAIL_FAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"ARCHALUDON",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:250,baseDefense:215,baseStamina:207},quickMoves:["METAL_CLAW_FAST","DRAGON_TAIL_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"KUBFU",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:170,baseDefense:112,baseStamina:155},quickMoves:["ROCK_SMASH_FAST","COUNTER_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"URSHIFU_RAPID_STRIKE_FORM",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:254,baseDefense:177,baseStamina:225},quickMoves:["ROCK_SMASH_FAST","COUNTER_FAST","WATERFALL_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"URSHIFU_SINGLE_STRIKE_FORM",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_DARK",stats:{baseAttack:254,baseDefense:177,baseStamina:225},quickMoves:["SUCKER_PUNCH_FAST","ROCK_SMASH_FAST","COUNTER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ETERNATUS",type:"POKEMON_TYPE_POISON",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:278,baseDefense:192,baseStamina:268},quickMoves:["DRAGON_TAIL_FAST","POISON_JAB_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"ZACIAN_CROWNED_SWORD_FORM",type:"POKEMON_TYPE_FAIRY",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:332,baseDefense:240,baseStamina:192},quickMoves:["SNARL_FAST","METAL_CLAW_FAST","QUICK_ATTACK_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"ZAMAZENTA_CROWNED_SHIELD_FORM",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:250,baseDefense:292,baseStamina:192},quickMoves:["SNARL_FAST","METAL_CLAW_FAST","QUICK_ATTACK_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"REGICE",type:"POKEMON_TYPE_ICE",type2:"POKEMON_TYPE_ICE",stats:{baseAttack:179,baseDefense:309,baseStamina:190},quickMoves:["FROST_BREATH_FAST","ROCK_SMASH_FAST","LOCK_ON_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"REGIROCK",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:179,baseDefense:309,baseStamina:190},quickMoves:["ROCK_THROW_FAST","ROCK_SMASH_FAST","LOCK_ON_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"TRAPINCH",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_GROUND",stats:{baseAttack:162,baseDefense:78,baseStamina:128},quickMoves:["MUD_SHOT_FAST","STRUGGLE_BUG_FAST","SAND_ATTACK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"VIBRAVA",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:134,baseDefense:99,baseStamina:137},quickMoves:["DRAGON_BREATH_FAST","MUD_SHOT_FAST","SAND_ATTACK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"FLYGON",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:205,baseDefense:168,baseStamina:190},quickMoves:["MUD_SHOT_FAST","DRAGON_TAIL_FAST","SAND_ATTACK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"COTTONEE",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:71,baseDefense:111,baseStamina:120},quickMoves:["RAZOR_LEAF_FAST","CHARM_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"WHIMSICOTT",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:164,baseDefense:176,baseStamina:155},quickMoves:["RAZOR_LEAF_FAST","CHARM_FAST","FAIRY_WIND_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"REGISTEEL",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:143,baseDefense:285,baseStamina:190},quickMoves:["METAL_CLAW_FAST","ROCK_SMASH_FAST","LOCK_ON_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"COMBEE",type:"POKEMON_TYPE_BUG",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:59,baseDefense:83,baseStamina:102},quickMoves:["BUG_BITE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"VESPIQUEN",type:"POKEMON_TYPE_BUG",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:149,baseDefense:190,baseStamina:172},quickMoves:["FURY_CUTTER_FAST","BUG_BITE_FAST","POISON_STING_FAST","AIR_SLASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ELECTABUZZ",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_ELECTRIC",stats:{baseAttack:198,baseDefense:158,baseStamina:163},quickMoves:["THUNDER_SHOCK_FAST","LOW_KICK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ELECTIVIRE",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_ELECTRIC",stats:{baseAttack:249,baseDefense:163,baseStamina:181},quickMoves:["THUNDER_SHOCK_FAST","LOW_KICK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"HOOTHOOT",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:67,baseDefense:88,baseStamina:155},quickMoves:["PECK_FAST","FEINT_ATTACK_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"NOCTOWL",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:145,baseDefense:156,baseStamina:225},quickMoves:["WING_ATTACK_FAST","EXTRASENSORY_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"DEINO",type:"POKEMON_TYPE_DARK",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:116,baseDefense:93,baseStamina:141},quickMoves:["DRAGON_BREATH_FAST","TACKLE_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"ZWEILOUS",type:"POKEMON_TYPE_DARK",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:159,baseDefense:135,baseStamina:176},quickMoves:["BITE_FAST","DRAGON_BREATH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"HYDREIGON",type:"POKEMON_TYPE_DARK",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:256,baseDefense:188,baseStamina:211},quickMoves:["BITE_FAST","DRAGON_BREATH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"FEEBAS",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:29,baseDefense:85,baseStamina:85},quickMoves:["TACKLE_FAST","SPLASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"MILOTIC",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:192,baseDefense:219,baseStamina:216},quickMoves:["DRAGON_TAIL_FAST","WATERFALL_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"MAGMAR",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:206,baseDefense:154,baseStamina:163},quickMoves:["KARATE_CHOP_FAST","EMBER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"MAGMORTAR",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:247,baseDefense:172,baseStamina:181},quickMoves:["KARATE_CHOP_FAST","FIRE_SPIN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"MAGIKARP",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:29,baseDefense:85,baseStamina:85},quickMoves:["SPLASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"GYARADOS",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:237,baseDefense:186,baseStamina:216},quickMoves:["BITE_FAST","DRAGON_BREATH_FAST","WATERFALL_FAST","DRAGON_TAIL_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"HITMONTOP",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:173,baseDefense:207,baseStamina:137},quickMoves:["ROCK_SMASH_FAST","COUNTER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"RHYHORN",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:140,baseDefense:127,baseStamina:190},quickMoves:["MUD_SLAP_FAST","ROCK_SMASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"RHYDON",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:222,baseDefense:171,baseStamina:233},quickMoves:["MUD_SLAP_FAST","ROCK_SMASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"RHYPERIOR",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:241,baseDefense:190,baseStamina:251},quickMoves:["MUD_SLAP_FAST","SMACK_DOWN_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"PALKIA",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:280,baseDefense:215,baseStamina:189},quickMoves:["DRAGON_BREATH_FAST","DRAGON_TAIL_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"DIALGA",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:275,baseDefense:211,baseStamina:205},quickMoves:["DRAGON_BREATH_FAST","METAL_CLAW_FAST"],canGmax:false,isLegendaryOrMythical:true}
+  ]
+};
+
+// console.log('✓ POKEDEX loaded:', POKEDEX.pokemon.length, 'Pokemon');
+
+// BOSSES - Available boss Pokemon (G-Max capable or Legendary/Mythical)
+// Format: {pokemonId, type, type2, stats:{baseAttack, baseDefense, baseStamina}, chargedMoves[], canGmax, isLegendaryOrMythical}
+const BOSSES = {
+  "boss": [
+    {pokemonId:"VENUSAUR",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:198,baseDefense:189,baseStamina:190},chargedMoves:["SLUDGE","PETAL_BLIZZARD","SLUDGE_BOMB","SOLAR_BEAM","FRENZY_PLANT"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"CHARIZARD",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:223,baseDefense:173,baseStamina:186},chargedMoves:["DRAGON_CLAW","FIRE_BLAST","AIR_CUTTER","OVERHEAT","BLAST_BURN","FLAMETHROWER"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"BLASTOISE",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:171,baseDefense:207,baseStamina:188},chargedMoves:["FLASH_CANNON","ICE_BEAM","HYDRO_PUMP","SKULL_BASH","HYDRO_CANNON"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"BUTTERFREE",type:"POKEMON_TYPE_BUG",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:167,baseDefense:137,baseStamina:155},chargedMoves:["BUG_BUZZ","SIGNAL_BEAM","PSYCHIC"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"PIKACHU",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_ELECTRIC",stats:{baseAttack:112,baseDefense:96,baseStamina:111},chargedMoves:["DISCHARGE","THUNDERBOLT","WILD_CHARGE","DRAINING_KISS","METEOR_MASH","SURF","THUNDER"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"MEOWTH",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:92,baseDefense:78,baseStamina:120},chargedMoves:["DARK_PULSE","NIGHT_SLASH","FOUL_PLAY","BODY_SLAM"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"MACHAMP",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:234,baseDefense:159,baseStamina:207},chargedMoves:["CROSS_CHOP","ROCK_SLIDE","CLOSE_COMBAT","DYNAMIC_PUNCH","HEAVY_SLAM","PAYBACK","STONE_EDGE","SUBMISSION"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"GENGAR",type:"POKEMON_TYPE_GHOST",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:261,baseDefense:149,baseStamina:155},chargedMoves:["SHADOW_BALL","SLUDGE_BOMB","FOCUS_BLAST","DRAIN_PUNCH","SHADOW_PUNCH","PSYCHIC","DARK_PULSE","SLUDGE_WAVE"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"KINGLER",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:240,baseDefense:181,baseStamina:146},chargedMoves:["VICE_GRIP","X_SCISSOR","WATER_PULSE","CRABHAMMER","RAZOR_SHELL"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"LAPRAS",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_ICE",stats:{baseAttack:165,baseDefense:174,baseStamina:277},chargedMoves:["BLIZZARD","HYDRO_PUMP","SURF","SKULL_BASH","SPARKLING_ARIA","ICE_BEAM","DRAGON_PULSE"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"EEVEE",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:104,baseDefense:114,baseStamina:146},chargedMoves:["DIG","SWIFT","LAST_RESORT","BODY_SLAM"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"SNORLAX",type:"POKEMON_TYPE_NORMAL",type2:"POKEMON_TYPE_NORMAL",stats:{baseAttack:190,baseDefense:169,baseStamina:330},chargedMoves:["HYPER_BEAM","EARTHQUAKE","BODY_SLAM","HEAVY_SLAM","OUTRAGE","SKULL_BASH","SUPER_POWER"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"ARTICUNO",type:"POKEMON_TYPE_ICE",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:192,baseDefense:236,baseStamina:207},chargedMoves:["ICE_BEAM","BLIZZARD","ANCIENT_POWER","ICY_WIND","TRIPLE_AXEL","HURRICANE"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"ZAPDOS",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:253,baseDefense:185,baseStamina:207},chargedMoves:["DRILL_PECK","ANCIENT_POWER","THUNDER","THUNDERBOLT","ZAP_CANNON"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"MOLTRES",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:251,baseDefense:181,baseStamina:207},chargedMoves:["HEAT_WAVE","ANCIENT_POWER","FIRE_BLAST","OVERHEAT","SKY_ATTACK"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"RAIKOU",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_ELECTRIC",stats:{baseAttack:241,baseDefense:195,baseStamina:207},chargedMoves:["SHADOW_BALL","THUNDER","THUNDERBOLT","WILD_CHARGE","AURA_SPHERE"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"ENTEI",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:235,baseDefense:171,baseStamina:251},chargedMoves:["FLAMETHROWER","IRON_HEAD","FLAME_CHARGE","FIRE_BLAST","OVERHEAT","SCORCHING_SANDS"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"SUICUNE",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:180,baseDefense:235,baseStamina:225},chargedMoves:["ICE_BEAM","BUBBLE_BEAM","WATER_PULSE","SCALD","HYDRO_PUMP"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"LUGIA",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FLYING",stats:{baseAttack:193,baseDefense:310,baseStamina:235},chargedMoves:["HYDRO_PUMP","SKY_ATTACK","FUTURESIGHT","FLY","AEROBLAST_PLUS_PLUS","AEROBLAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"LATIAS",type:"POKEMON_TYPE_DRAGON",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:228,baseDefense:246,baseStamina:190},chargedMoves:["THUNDER","PSYCHIC","OUTRAGE","AURA_SPHERE","MIST_BALL"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"LATIOS",type:"POKEMON_TYPE_DRAGON",type2:"POKEMON_TYPE_PSYCHIC",stats:{baseAttack:268,baseDefense:212,baseStamina:190},chargedMoves:["DRAGON_CLAW","PSYCHIC","SOLAR_BEAM","AURA_SPHERE","LUSTER_PURGE"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"GARBODOR",type:"POKEMON_TYPE_POISON",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:181,baseDefense:164,baseStamina:190},chargedMoves:["SEED_BOMB","GUNK_SHOT","BODY_SLAM","ACID_SPRAY"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"RILLABOOM",type:"POKEMON_TYPE_GRASS",type2:"POKEMON_TYPE_GRASS",stats:{baseAttack:239,baseDefense:168,baseStamina:225},chargedMoves:["GRASS_KNOT","ENERGY_BALL","EARTH_POWER","DRUM_BEATING","FRENZY_PLANT"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"CINDERACE",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_FIRE",stats:{baseAttack:238,baseDefense:163,baseStamina:190},chargedMoves:["FLAMETHROWER","FLAME_CHARGE","FOCUS_BLAST"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"INTELEON",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_WATER",stats:{baseAttack:262,baseDefense:142,baseStamina:172},chargedMoves:["SHADOW_BALL","WATER_PULSE","SURF"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"CORVIKNIGHT",type:"POKEMON_TYPE_FLYING",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:163,baseDefense:192,baseStamina:221},chargedMoves:["SKY_ATTACK","PAYBACK","AIR_CUTTER","DRILL_PECK","IRON_HEAD","BRAVE_BIRD"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"TOXTRICITY",type:"POKEMON_TYPE_ELECTRIC",type2:"POKEMON_TYPE_POISON",stats:{baseAttack:224,baseDefense:140,baseStamina:181},chargedMoves:["DISCHARGE","WILD_CHARGE","ACID_SPRAY","POWER_UP_PUNCH"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"HATTERENE",type:"POKEMON_TYPE_PSYCHIC",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:237,baseDefense:182,baseStamina:149},chargedMoves:["PSYSHOCK","DAZZLING_GLEAM","PSYCHIC","POWER_WHIP","PSYBEAM"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"GRIMMSNARL",type:"POKEMON_TYPE_DARK",type2:"POKEMON_TYPE_FAIRY",stats:{baseAttack:227,baseDefense:139,baseStamina:216},chargedMoves:["DARK_PULSE","PLAY_ROUGH","FOUL_PLAY","POWER_UP_PUNCH"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"DURALUDON",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:239,baseDefense:185,baseStamina:172},chargedMoves:["HYPER_BEAM","FLASH_CANNON","DRAGON_CLAW"],canGmax:true,isLegendaryOrMythical:false},
+    {pokemonId:"KUBFU",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_FIGHTING",stats:{baseAttack:170,baseDefense:112,baseStamina:155},chargedMoves:["BRICK_BREAK","CLOSE_COMBAT","DYNAMIC_PUNCH"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"ETERNATUS",type:"POKEMON_TYPE_POISON",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:278,baseDefense:192,baseStamina:268},chargedMoves:["DRAGON_PULSE","SLUDGE_BOMB","CROSS_POISON"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"ZACIAN_CROWNED_SWORD_FORM",type:"POKEMON_TYPE_FAIRY",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:332,baseDefense:240,baseStamina:192},chargedMoves:["PLAY_ROUGH","IRON_HEAD","CLOSE_COMBAT"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"ZAMAZENTA_CROWNED_SHIELD_FORM",type:"POKEMON_TYPE_FIGHTING",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:250,baseDefense:292,baseStamina:192},chargedMoves:["IRON_HEAD","CLOSE_COMBAT","CRUNCH"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"REGICE",type:"POKEMON_TYPE_ICE",type2:"POKEMON_TYPE_ICE",stats:{baseAttack:179,baseDefense:309,baseStamina:190},chargedMoves:["EARTHQUAKE","BLIZZARD","FOCUS_BLAST","THUNDER"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"REGIROCK",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:179,baseDefense:309,baseStamina:190},chargedMoves:["STONE_EDGE","FOCUS_BLAST","ZAP_CANNON","EARTHQUAKE"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"REGISTEEL",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:143,baseDefense:285,baseStamina:190},chargedMoves:["HYPER_BEAM","FLASH_CANNON","FOCUS_BLAST","ZAP_CANNON"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"PALKIA",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:280,baseDefense:215,baseStamina:189},chargedMoves:["AQUA_TAIL","FIRE_BLAST","HYDRO_PUMP","DRACO_METEOR"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"DIALGA",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:275,baseDefense:211,baseStamina:205},chargedMoves:["IRON_HEAD","THUNDER","DRACO_METEOR"],canGmax:false,isLegendaryOrMythical:true}
+  ]
+};
+
+// console.log('✓ BOSSES loaded:', BOSSES.boss.length, 'bosses');
+
+// ─── MAX MOVE MAPPINGS ────────────────────────────────────
+
+// D-MAX MOVE MAPPINGS - Maps fast move type (display format) to D-Max move
+const D_MAX_MOVES = {
+  "Normal":   {name: "Max Strike",     type: "Normal"},
+  "Fire":     {name: "Max Flare",      type: "Fire"},
+  "Water":    {name: "Max Geyser",     type: "Water"},
+  "Electric": {name: "Max Lightning",  type: "Electric"},
+  "Grass":    {name: "Max Overgrowth", type: "Grass"},
+  "Ice":      {name: "Max Hailstorm",  type: "Ice"},
+  "Fighting": {name: "Max Knuckle",    type: "Fighting"},
+  "Poison":   {name: "Max Ooze",       type: "Poison"},
+  "Ground":   {name: "Max Quake",      type: "Ground"},
+  "Flying":   {name: "Max Airstream",  type: "Flying"},
+  "Psychic":  {name: "Max Mindstorm",  type: "Psychic"},
+  "Bug":      {name: "Max Flutterby",  type: "Bug"},
+  "Rock":     {name: "Max Rockfall",   type: "Rock"},
+  "Ghost":    {name: "Max Phantasm",   type: "Ghost"},
+  "Dragon":   {name: "Max Wyrmwind",   type: "Dragon"},
+  "Dark":     {name: "Max Darkness",   type: "Dark"},
+  "Steel":    {name: "Max Steelspike", type: "Steel"},
+  "Fairy":    {name: "Max Starfall",   type: "Fairy"},
+};
+
+// console.log('✓ D_MAX_MOVES loaded');
+
+// G-MAX MOVE MAPPINGS - Maps Pokemon API name to G-Max move
+const G_MAX_MOVES = {
+  "VENUSAUR":     {name: "G-Max Vine Lash",  type: "Grass"},
+  "CHARIZARD":    {name: "G-Max Wildfire",   type: "Fire"},
+  "BLASTOISE":    {name: "G-Max Cannonade",  type: "Water"},
+  "BUTTERFREE":   {name: "G-Max Befuddle",   type: "Bug"},
+  "PIKACHU":      {name: "G-Max Volt Crash", type: "Electric"},
+  "MEOWTH":       {name: "G-Max Gold Rush",  type: "Normal"},
+  "MACHAMP":      {name: "G-Max Chi Strike", type: "Fighting"},
+  "GENGAR":       {name: "G-Max Terror",     type: "Ghost"},
+  "KINGLER":      {name: "G-Max Foam Burst", type: "Water"},
+  "LAPRAS":       {name: "G-Max Resonance",  type: "Ice"},
+  "EEVEE":        {name: "G-Max Cuddle",     type: "Normal"},
+  "SNORLAX":      {name: "G-Max Replenish",  type: "Normal"},
+  "GARBODOR":     {name: "G-Max Malodor",    type: "Poison"},
+  "MELMETAL":     {name: "G-Max Meltdown",   type: "Steel"},
+  "RILLABOOM":    {name: "G-Max Drum Solo",  type: "Grass"},
+  "CINDERACE":    {name: "G-Max Fireball",   type: "Fire"},
+  "INTELEON":     {name: "G-Max Hydrosnipe", type: "Water"},
+  "CORVIKNIGHT":  {name: "G-Max Wind Rage",  type: "Flying"},
+  "ORBEETLE":     {name: "G-Max Gravitas",   type: "Psychic"},
+  "DREDNAW":      {name: "G-Max Stonesurge", type: "Rock"},
+  "COALOSSAL":    {name: "G-Max Volcalith",  type: "Rock"},
+  "FLAPPLE":      {name: "G-Max Tartness",   type: "Grass"},
+  "APPLETUN":     {name: "G-Max Sweetness",  type: "Grass"},
+  "SANDACONDA":   {name: "G-Max Sandblast",  type: "Ground"},
+  "TOXTRICITY":   {name: "G-Max Stun Shock", type: "Electric"},
+  "CENTISKORCH":  {name: "G-Max Centiferno", type: "Fire"},
+  "HATTERENE":    {name: "G-Max Smite",      type: "Fairy"},
+  "GRIMMSNARL":   {name: "G-Max Snooze",     type: "Dark"},
+  "ALCREMIE":     {name: "G-Max Finale",     type: "Fairy"},
+  "COPPERAJAH":   {name: "G-Max Steelsurge", type: "Steel"},
+  "DURALUDON":    {name: "G-Max Depletion",  type: "Dragon"},
+  "URSHIFU":      {name: "G-Max One Blow",   type: "Dark"},
+};
+
+// console.log('✓ G_MAX_MOVES loaded');
+
+// ════════════════════════════════════════════════════════
+// 🔧 FUNCTIONS & APPLICATION LOGIC
+// ════════════════════════════════════════════════════════
+
+function formatDisplayName(pokemonId) {
+  if (!pokemonId) return '';
+  const id = pokemonId.toUpperCase();
+  
+  // Special cases for Crowned forms
+  if (id === 'ZACIAN_CROWNED_SWORD_FORM') return 'Crown Zacian';
+  if (id === 'ZAMAZENTA_CROWNED_SHIELD_FORM') return 'Crown Zamazenta';
+  
+  // Special cases for hyphenated names
+  if (id === 'HO-OH') return 'Ho-Oh';
+  if (id === 'PORYGON-Z') return 'Porygon-Z';
+  if (id === 'JANGMO-O') return 'Jangmo-o';
+  if (id === 'HAKAMO-O') return 'Hakamo-o';
+  if (id === 'KOMMO-O') return 'Kommo-o';
+  if (id === 'TYPE-NULL') return 'Type: Null';
+  if (id.startsWith('TAPU-')) {
+    // Tapu-Koko, Tapu-Lele, etc.
+    return 'Tapu-' + id.split('-')[1].charAt(0) + id.split('-')[1].slice(1).toLowerCase();
+  }
+  // Standard: capitalize first letter, lowercase rest
+  return id.charAt(0) + id.slice(1).toLowerCase();
+}
+
+// Format Pokemon name for roster display (adds D-Max/G-Max prefix where appropriate)
+function formatRosterName(pokemonId, maxType) {
+  const baseName = formatDisplayName(pokemonId);
+  
+  // Special legendaries don't D-Max or G-Max - just show their base name
+  if (SPECIAL_MAX_MOVES[pokemonId]) {
+    return baseName;  // "Crown Zacian", "Crown Zamazenta", "Eternatus"
+  }
+  
+  // Add D-Max or G-Max prefix for Pokemon that can Max
+  if (maxType === 'dmax') {
+    return `D-Max ${baseName}`;
+  } else if (maxType === 'gmax') {
+    return `G-Max ${baseName}`;
+  }
+  
+  return baseName;
+}
+
+// ─── COMPUTED CONSTANTS (require formatDisplayName) ───────
+
+// Autocomplete name lists (derived from POKEDEX and BOSSES)
+const POKE_NAMES = POKEDEX.pokemon.map(p => p.pokemonId.toLowerCase()).sort();
+const BOSS_NAMES = BOSSES.boss.map(b => formatDisplayName(b.pokemonId).toLowerCase()).sort();
+
+// console.log('✓ POKE_NAMES computed:', POKE_NAMES.length, 'names');
+// console.log('✓ BOSS_NAMES computed:', BOSS_NAMES.length, 'names');
+// console.log('✓ All databases and constants loaded successfully!');
+// console.log('===========================================');
+
+// ════════════════════════════════════════════════════════
+// Helper to get Pokemon by ID (case-insensitive)
+function getPokemon(identifier) {
+  const id = identifier.toUpperCase().replace(/ /g, '_');
+  return POKEDEX.pokemon.find(p => p.pokemonId === id || p.pokemonId.toLowerCase() === identifier.toLowerCase());
+}
+
+
+// Helper to get Boss by pokemonId (case-insensitive)
+function getBoss(identifier) {
+  const id = identifier.toUpperCase();
+  return BOSSES.boss.find(b => b.pokemonId === id);
+}
+
+// Helper to get types array from boss
+function getBossTypes(boss) {
+  if (!boss) return [];
+  const types = [parseType(boss.type)];
+  if (boss.type2 !== boss.type) {
+    types.push(parseType(boss.type2));
+  }
+  return types;
+}
+
+// Get selected boss charged moves
+function getSelectedBossLargeMove() {
+  const select = document.getElementById('boss-large-move');
+  return select ? select.value : null;
+}
+
+function getSelectedBossTargetedMove() {
+  const select = document.getElementById('boss-targeted-move');
+  return select ? select.value : null;
+}
+
+// Toggle between manual move selection and all combos average
+function toggleAllMoveCombos() {
+  allMovesActive = !allMovesActive;
+  
+  const btn = document.getElementById('all-moves-btn');
+  const text = document.getElementById('all-moves-text');
+  const largeSelect = document.getElementById('boss-large-move');
+  const targetedSelect = document.getElementById('boss-targeted-move');
+  const largeLabel = document.getElementById('large-move-label');
+  const targetedLabel = document.getElementById('targeted-move-label');
+  
+  if (allMovesActive) {
+    // Activate All Moves mode
+    btn.classList.add('active');
+    text.textContent = 'All Moves: ON';
+    
+    // Disable manual selection
+    largeSelect.disabled = true;
+    targetedSelect.disabled = true;
+    largeSelect.style.opacity = '0.5';
+    targetedSelect.style.opacity = '0.5';
+    largeLabel.style.opacity = '0.5';
+    targetedLabel.style.opacity = '0.5';
+  } else {
+    // Deactivate All Moves mode
+    btn.classList.remove('active');
+    text.textContent = 'All Moves: OFF';
+    
+    // Enable manual selection
+    largeSelect.disabled = false;
+    targetedSelect.disabled = false;
+    largeSelect.style.opacity = '1';
+    targetedSelect.style.opacity = '1';
+    largeLabel.style.opacity = '1';
+    targetedLabel.style.opacity = '1';
+  }
+}
+
+// TYPE COLORS
+
+function typePill(t) {
+  // Handle dual types (e.g., "Fairy/Steel")
+  if (t.includes('/')) {
+    const types = t.split('/');
+    return types.map(type => {
+      const c = TYPE_COLORS[type] || '#888';
+      return `<span class="type-pill" style="background:${c}22;border:1px solid ${c}66;color:${c}">${type}</span>`;
+    }).join(' ');
+  }
+  
+  // Single type
+  const c = TYPE_COLORS[t] || '#888';
+  return `<span class="type-pill" style="background:${c}22;border:1px solid ${c}66;color:${c}">${t}</span>`;
+}
+
+// TYPE EFFECTIVENESS - POKÉMON GO CHART (VERIFIED)
+// Organized: Super Effective (1.6×) listed FIRST, then Not Very Effective
+// 
+// IMPORTANT: Former immunities = 0.390625× (DOUBLE resistance, not single 0.625×)
+// - Normal→Ghost, Ghost→Normal, Ground→Flying, Dragon→Fairy
+// - Poison→Steel, Psychic→Dark, Fighting→Ghost, Electric→Ground
+//
+// ⚡ LIVE API NOTE: When deploying, can fetch from:
+// https://pogoapi.net/api/v1/type_effectiveness.json
+//
+// Quick reference:
+// Bug: SE→[Grass,Psychic,Dark] | NVE→[Fire,Fighting,Poison,Flying,Ghost,Steel,Fairy]
+// Dark: SE→[Ghost,Psychic] | NVE→[Fighting,Dark,Fairy]
+// Dragon: SE→[Dragon] | NVE→[Steel] | DOUBLE_NVE→[Fairy]
+// Electric: SE→[Water,Flying] | NVE→[Electric,Grass,Dragon] | DOUBLE_NVE→[Ground]
+// Fairy: SE→[Fighting,Dragon,Dark] | NVE→[Fire,Poison,Steel]
+// Fighting: SE→[Normal,Ice,Rock,Dark,Steel] | NVE→[Poison,Flying,Psychic,Bug,Fairy] | DOUBLE_NVE→[Ghost]
+// Fire: SE→[Grass,Ice,Bug,Steel] | NVE→[Fire,Water,Rock,Dragon]
+// Flying: SE→[Grass,Fighting,Bug] | NVE→[Electric,Rock,Steel]
+// Ghost: SE→[Ghost,Psychic] | NVE→[Dark] | DOUBLE_NVE→[Normal]
+// Grass: SE→[Water,Ground,Rock] | NVE→[Fire,Grass,Poison,Flying,Bug,Dragon,Steel]
+// Ground: SE→[Fire,Electric,Poison,Rock,Steel] | NVE→[Grass,Bug] | DOUBLE_NVE→[Flying]
+// Ice: SE→[Grass,Ground,Flying,Dragon] | NVE→[Fire,Water,Ice,Steel]
+// Normal: SE→[none] | NVE→[Rock,Steel] | DOUBLE_NVE→[Ghost]
+// Poison: SE→[Grass,Fairy] | NVE→[Poison,Ground,Rock,Ghost] | DOUBLE_NVE→[Steel]
+// Psychic: SE→[Fighting,Poison] | NVE→[Psychic,Steel] | DOUBLE_NVE→[Dark]
+// Rock: SE→[Fire,Ice,Flying,Bug] | NVE→[Fighting,Ground,Steel]
+// Steel: SE→[Ice,Rock,Fairy] | NVE→[Fire,Water,Electric,Steel]
+// Water: SE→[Fire,Ground,Rock] | NVE→[Water,Grass,Dragon]
+function getEff(atk, def) {
+  const chart = {
+    Bug:{Dark:1.6,Grass:1.6,Psychic:1.6,Fairy:0.625,Fighting:0.625,Fire:0.625,Flying:0.625,Ghost:0.625,Poison:0.625,Steel:0.625},
+    Dark:{Ghost:1.6,Psychic:1.6,Dark:0.625,Fairy:0.625,Fighting:0.625},
+    Dragon:{Dragon:1.6,Steel:0.625,Fairy:0.390625},
+    Electric:{Flying:1.6,Water:1.6,Dragon:0.625,Electric:0.625,Grass:0.625,Ground:0.390625},
+    Fairy:{Dark:1.6,Dragon:1.6,Fighting:1.6,Fire:0.625,Poison:0.625,Steel:0.625},
+    Fighting:{Dark:1.6,Ice:1.6,Normal:1.6,Rock:1.6,Steel:1.6,Bug:0.625,Fairy:0.625,Flying:0.625,Poison:0.625,Psychic:0.625,Ghost:0.390625},
+    Fire:{Bug:1.6,Grass:1.6,Ice:1.6,Steel:1.6,Dragon:0.625,Fire:0.625,Rock:0.625,Water:0.625},
+    Flying:{Bug:1.6,Fighting:1.6,Grass:1.6,Electric:0.625,Rock:0.625,Steel:0.625},
+    Ghost:{Ghost:1.6,Psychic:1.6,Dark:0.625,Normal:0.390625},
+    Grass:{Ground:1.6,Rock:1.6,Water:1.6,Bug:0.625,Dragon:0.625,Fire:0.625,Flying:0.625,Grass:0.625,Poison:0.625,Steel:0.625},
+    Ground:{Electric:1.6,Fire:1.6,Poison:1.6,Rock:1.6,Steel:1.6,Bug:0.625,Grass:0.625,Flying:0.390625},
+    Ice:{Dragon:1.6,Flying:1.6,Grass:1.6,Ground:1.6,Fire:0.625,Ice:0.625,Steel:0.625,Water:0.625},
+    Normal:{Rock:0.625,Steel:0.625,Ghost:0.390625},
+    Poison:{Fairy:1.6,Grass:1.6,Ghost:0.625,Ground:0.625,Poison:0.625,Rock:0.625,Steel:0.390625},
+    Psychic:{Fighting:1.6,Poison:1.6,Psychic:0.625,Steel:0.625,Dark:0.390625},
+    Rock:{Bug:1.6,Fire:1.6,Flying:1.6,Ice:1.6,Fighting:0.625,Ground:0.625,Steel:0.625},
+    Steel:{Fairy:1.6,Ice:1.6,Rock:1.6,Electric:0.625,Fire:0.625,Steel:0.625,Water:0.625},
+    Water:{Fire:1.6,Ground:1.6,Rock:1.6,Dragon:0.625,Grass:0.625,Water:0.625},
+  };
+  return (chart[atk]||{})[def] ?? 1;
+}
+
+function effectiveness(atkType, defTypes) {
+  // Handle dual-type attacker (e.g., "Fairy/Steel")
+  if (typeof atkType === 'string' && atkType.includes('/')) {
+    // For dual-type attacker, use the first type (STAB type typically)
+    // In Pokémon GO, only one attack type is used per move
+    atkType = atkType.split('/')[0];
+  }
+  
+  // Handle dual-type defender (convert string to array if needed)
+  if (typeof defTypes === 'string') {
+    defTypes = defTypes.includes('/') ? defTypes.split('/') : [defTypes];
+  }
+  
+  // Multiplies effectiveness against each defender type
+  // Example: Fire vs Grass/Poison (Venusaur) = 1.6 × 1.0 = 1.6 (still SE)
+  // Example: Ice vs Dragon/Flying = 1.6 × 1.6 = 2.56 (double super)
+  // Example: Fire vs Rock/Water = 0.625 × 0.625 = 0.390625 (double resist)
+  return defTypes.reduce((m, dt) => m * getEff(atkType, dt), 1);
+}
+
+// CP CALCULATION - Pokémon GO Formula
+// CP = floor((Attack × √Defense × √HP × CPM²) / 10)
+function calculateCP(baseAtk, baseDef, baseHp, ivAtk, ivDef, ivHp, level) {
+  const cpm = CPM[level] || CPM[40];
+  const atk = baseAtk + ivAtk;
+  const def = baseDef + ivDef;
+  const hp = baseHp + ivHp;
+  
+  const cp = Math.floor((atk * Math.sqrt(def) * Math.sqrt(hp) * cpm * cpm) / 10);
+  return Math.max(cp, 10); // Minimum CP is 10
+}
+
+// DAMAGE FORMULA (Pokémon GO)
+// Uses GO type effectiveness (1.6× for SE, 0.625× for NVE)
+// ATK and DEF can be floats, damage is always integer (floored)
+// Check if move gets STAB (Same Type Attack Bonus)
+// Returns 1.2 if move type matches Pokémon type, otherwise 1.0
+function getSTAB(moveType, pokemonType) {
+  // Handle dual-type Pokémon (e.g., "Fairy/Steel")
+  if (pokemonType.includes('/')) {
+    const types = pokemonType.split('/');
+    return types.includes(moveType) ? 1.2 : 1.0;
+  }
+  // Single-type Pokémon
+  return moveType === pokemonType ? 1.2 : 1.0;
+}
+
+function calcDamage(power, atk, def, eff = 1.0, stab = 1.0, weather = 1.0) {
+  return Math.floor(0.5 * power * (atk / def) * eff * stab * weather) + 1;
+}
+
+// WEATHER BOOST
+// Weather conditions and the types they boost (+20% damage)
+
+// Get weather boost multiplier for a move type
+function getWeatherBoost(moveType, weather) {
+  if (!weather || weather === "none") return 1.0;
+  const boostedTypes = WEATHER_BOOST[weather];
+  return boostedTypes && boostedTypes.includes(moveType) ? 1.2 : 1.0;
+}
+
+// MAX MOVE POWER
+// Levels 1-3 available to users, Level 4 coded for future use
+
+// MAX SPIRIT - HEALING ABILITY
+// Heals a percentage of the user's max HP
+
+// FORMAT: pokemon_name → [{name, type, power, duration, energy}]
+// 
+// 🌐 FUTURE API INTEGRATION (when deployed live):
+//    Endpoint: https://pogoapi.net/api/v1/fast_moves.json
+//    ⚠️ CRITICAL: This endpoint returns PvE stats (what we want)
+//    
+//    How to verify you have PvE stats (not PvP):
+//    ✓ Fire Spin: power=14 (PvE) vs power=9 (PvP)
+//    ✓ Confusion: power=20 (PvE) vs power=12 (PvP)
+//    ✓ Counter: power=12, duration=900ms (PvE) vs power=8, duration=1000ms (PvP)
+//    
+//    If API ever changes to PvP stats, contact PogoAPI.net or find alternative endpoint
+// 
+// MANUAL DATA for offline development (PvE stats - verified correct):
+// Power: damage per use (PvE), Duration: seconds per use (PvE), Energy: energy gained
+// Structured to match Pokebattler API format for easy integration
+// 
+// 🌐 API ENDPOINT (when live):
+//    https://fight.pokebattler.com/moves
+//    Response format: {"move": [{moveId, type, power, durationMs, energyDelta, vfxName, ...}, ...]}
+// 
+// FORMAT: {moveId: "MOVE_NAME", type: "TYPE", power: X, durationMs: X, energyDelta: X, vfxName: "lowercase_name"}
+// ⚠️ durationMs MUST be multiple of 500 (500, 1000, 1500, 2000, 2500, 3000, etc.)
+
+// Helper function to get move by moveId or vfxName
+function getFastMove(identifier) {
+  let id = identifier.toUpperCase().replace(/ /g, '_');
+  // Add _FAST suffix if not present (API uses _FAST for quick moves)
+  if (!id.endsWith('_FAST')) {
+    id = id + '_FAST';
+  }
+  return FAST_MOVES.move.find(m => m.moveId === id || m.vfxName === identifier.toLowerCase().replace(/ /g, '_'));
+}
+
+// Helper function to convert API type to display type
+function parseType(apiType) {
+  return apiType.replace('POKEMON_TYPE_', '').charAt(0) + apiType.replace('POKEMON_TYPE_', '').slice(1).toLowerCase();
+}
+
+// Convert fast move from API format to display format for roster storage
+function convertFastMoveToDisplay(fastMove) {
+  if (!fastMove) return null;
+  
+  return {
+    moveId: fastMove.moveId,  // Keep original ID for reference
+    name: fastMove.moveId
+      .replace('_FAST', '')
+      .split('_')
+      .map(w => w.charAt(0) + w.slice(1).toLowerCase())
+      .join(' '),
+    type: parseType(fastMove.type),  // Convert to display format
+    power: fastMove.power,
+    duration: fastMove.durationMs / 1000,  // Convert ms to seconds
+    energy: fastMove.energyDelta,
+  };
+}
+
+// Determine max move name and type based on Pokemon API name, fast move, and max type
+function getMaxMove(pokemonId, fastMoveType, maxType) {
+  // pokemonId is in API format (e.g., "PIKACHU", "ZACIAN_CROWNED_SWORD_FORM")
+  
+  // Special legendaries (uses API format names)
+  if (SPECIAL_MAX_MOVES[pokemonId]) {
+    return SPECIAL_MAX_MOVES[pokemonId];
+  }
+  
+  // G-Max Pokemon (uses API format names)
+  if (maxType === 'gmax' && G_MAX_MOVES[pokemonId]) {
+    return G_MAX_MOVES[pokemonId];
+  }
+  
+  // D-Max: Use fast move type to determine D-Max move
+  if (fastMoveType && D_MAX_MOVES[fastMoveType]) {
+    return D_MAX_MOVES[fastMoveType];
+  }
+  
+  // Fallback: No fast move selected
+  return null;
+}
+
+// MAX GUARD - SHIELD ABILITY
+// Provides shield HP to absorb damage
+
+// MAX GUARD - LEVEL ADJUSTMENT for shielder scoring
+// Higher levels = better shielding = lower score multiplier
+
+// CP MULTIPLIER (CPM) - Official Pokémon GO values
+// Final stat = (Base + IV) × CPM
+// Levels 1-50 including half levels (1, 1.5, 2, 2.5, etc.)
+// Levels 50.5 and 51 = Best Buddy bonus (UI shows max 50, but these are used for calculations)
+
+// ── STATE ─────────────────────────────────────────────
+let roster = JSON.parse(localStorage.getItem('maxbattle_v5') || '[]');
+let dynamaxCannonActive = false; // Track Dynamax Cannon boost state
+let allMovesActive = true; // Track All Moves mode state (default ON)
+let selectedBoss = null;
+let currentStats = null;
+
+// Pagination state
+const categoryPages = {
+  'Attackers': 1,
+  'Shielders': 1,
+  'Tanks': 1,
+  'Healers': 1
+};
+const ITEMS_PER_PAGE = 3;
+const ROSTER_ITEMS_PER_PAGE = 5;
+let rosterCurrentPage = 1;
+
+// Create sorted boss names array for autocomplete
+
+
+// ── FAST MOVES API INTEGRATION (for when live) ────────
+// Fetch fast moves from PogoAPI when deployed
+// ⚠️ CRITICAL: Must use PvE stats (Raid/Gym/Max Battle), NOT PvP stats
+async function fetchFastMovesFromAPI() {
+  try {
+    // Fetch Pokémon moves mapping
+    const pokemonMovesResponse = await fetch('https://pogoapi.net/api/v1/pokemon_moves.json');
+    const pokemonMovesData = await pokemonMovesResponse.json();
+    
+    // Fetch fast move details
+    // ⚠️ IMPORTANT: This endpoint returns PvE stats by default
+    // Fields: power, duration (in milliseconds), energy_delta
+    // These are for Raids/Gyms/Max Battles, NOT PvP
+    const fastMovesResponse = await fetch('https://pogoapi.net/api/v1/fast_moves.json');
+    const fastMovesData = await fastMovesResponse.json();
+    
+    // Build move ID to details map (PvE STATS)
+    const moveDetailsMap = {};
+    fastMovesData.forEach(move => {
+      // Verify we're using PvE stats:
+      // - move.power = PvE damage (e.g., Fire Spin = 14, not 9)
+      // - move.duration = milliseconds (e.g., Fire Spin = 1100ms, not 1000ms)
+      // - move.energy_delta = energy gain (same for PvE and PvP)
+      moveDetailsMap[move.id] = {
+        name: move.name,
+        type: move.type,
+        power: move.power,                    // ✓ PvE power
+        duration: move.duration / 1000,       // ✓ Convert ms to seconds (PvE timing)
+        energy: move.energy_delta             // ✓ Energy gain
+      };
+    });
+    
+    // Build FAST_MOVES object from API data
+    const apiFastMoves = {};
+    Object.keys(POKEDEX).forEach(pokemonName => {
+      const pokemon = pokemonMovesData.find(p => p.pokemon_name.toLowerCase() === pokemonName);
+      if (pokemon && pokemon.fast_moves) {
+        apiFastMoves[pokemonName] = pokemon.fast_moves
+          .map(moveId => moveDetailsMap[moveId])
+          .filter(move => move); // Filter out any undefined moves
+      }
+    });
+    
+    // Store in localStorage for offline use (1 day cache)
+    localStorage.setItem('fastMovesCache', JSON.stringify(apiFastMoves));
+    localStorage.setItem('fastMovesCacheTime', Date.now().toString());
+    
+    // console.log('✓ Fetched PvE fast move stats from API');
+    return apiFastMoves;
+  } catch (error) {
+    console.error('Failed to fetch fast moves from API:', error);
+    return null;
+  }
+}
+
+// Load fast moves (use cache if available, otherwise use hardcoded data)
+async function loadFastMoves() {
+  // Check if we have cached API data (less than 1 day old)
+  const cacheTime = localStorage.getItem('fastMovesCacheTime');
+  const cachedMoves = localStorage.getItem('fastMovesCache');
+  
+  if (cacheTime && cachedMoves) {
+    const age = Date.now() - parseInt(cacheTime);
+    const oneDay = 24 * 60 * 60 * 1000; // 1 day cache for faster updates
+    
+    if (age < oneDay) {
+      // Use cached data
+      // console.log('✓ Using cached fast move data');
+      return JSON.parse(cachedMoves);
+    }
+  }
+  
+  // Try to fetch from API (only works when live)
+  const apiMoves = await fetchFastMovesFromAPI();
+  if (apiMoves) {
+    return apiMoves;
+  }
+  
+  // Fall back to hardcoded FAST_MOVES (PvE stats)
+  // console.log('✓ Using hardcoded PvE fast move data');
+  return FAST_MOVES;
+}
+
+// Initialize fast moves on page load
+let CURRENT_FAST_MOVES = FAST_MOVES; // Default to hardcoded PvE stats
+// 🔴 TO ENABLE API WHEN LIVE: Uncomment the line below
+// loadFastMoves().then(moves => { CURRENT_FAST_MOVES = moves; });
+
+
+renderRoster();
+
+// ── GENERIC AUTOCOMPLETE SYSTEM ──────────────────────
+// Consolidated autocomplete logic for both Pokemon and Boss
+const Autocomplete = {
+  // Core autocomplete logic
+  handleInput(val, config) {
+    const q = val.trim().toLowerCase();
+    const list = document.getElementById(config.listId);
+    config.index.value = -1;
+
+    if (q.length < 1) { 
+      list.classList.remove('open'); 
+      list.innerHTML=''; 
+      return; 
+    }
+
+    const starts = config.names.filter(n => n.startsWith(q));
+    const contains = config.names.filter(n => !n.startsWith(q) && n.includes(q));
+    const matches = [...starts, ...contains].slice(0, 12);
+
+    if (!matches.length) { 
+      list.classList.remove('open'); 
+      list.innerHTML=''; 
+      return; 
+    }
+
+    list.innerHTML = matches.map(name => {
+      const idx = name.indexOf(q);
+      const hl = name.slice(0,idx) + '<em>' + name.slice(idx,idx+q.length) + '</em>' + name.slice(idx+q.length);
+      return `<div class="ac-item" data-name="${name}" onmousedown="event.preventDefault()" onclick="${config.selectFn}('${name}')">${hl}</div>`;
+    }).join('');
+
+    list.classList.add('open');
+  },
+
+  handleKeydown(e, config) {
+    const list = document.getElementById(config.listId);
+    const items = list.querySelectorAll('.ac-item');
+    if (!items.length) return;
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      config.index.value = Math.min(config.index.value + 1, items.length - 1);
+      items.forEach((el,i) => el.classList.toggle('active', i === config.index.value));
+      items[config.index.value]?.scrollIntoView({block:'nearest'});
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      config.index.value = Math.max(config.index.value - 1, -1);
+      items.forEach((el,i) => el.classList.toggle('active', i === config.index.value));
+      if (config.index.value >= 0) items[config.index.value]?.scrollIntoView({block:'nearest'});
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const activeItem = config.index.value >= 0 && items[config.index.value] 
+        ? items[config.index.value] 
+        : list.querySelector('.ac-item');
+      if (activeItem) {
+        // Call the select function by name
+        window[config.selectFn](activeItem.dataset.name);
+      }
+    } else if (e.key === 'Escape') {
+      list.classList.remove('open');
+      list.innerHTML = '';
+    }
+  },
+
+  select(name, config) {
+    document.getElementById(config.inputId).value = name;
+    const list = document.getElementById(config.listId);
+    list.classList.remove('open');
+    list.innerHTML = '';
+    config.index.value = -1;
+    config.onSelect(name);
+  }
+};
+
+// Autocomplete configurations
+const pokeAcConfig = {
+  inputId: 'poke-input',
+  listId: 'ac-list',
+  index: { value: -1 },  // Using object to pass by reference
+  names: POKE_NAMES,
+  selectFn: 'acSelect',
+  onSelect: loadStats
+};
+
+const bossAcConfig = {
+  inputId: 'boss-input',
+  listId: 'boss-ac-list',
+  index: { value: -1 },  // Using object to pass by reference
+  names: BOSS_NAMES,
+  selectFn: 'bossAcSelect',
+  onSelect: onBossChange
+};
+
+// Pokemon autocomplete wrappers (for backwards compatibility with HTML onclick handlers)
+function acInput(val) {
+  // Pokemon-specific pre-processing
+  currentStats = null;
+  document.getElementById('add-btn').disabled = true;
+  document.getElementById('stat-preview').classList.remove('show');
+  
+  Autocomplete.handleInput(val, pokeAcConfig);
+}
+
+function acKeydown(e) {
+  Autocomplete.handleKeydown(e, pokeAcConfig);
+}
+
+function acSelect(name) {
+  Autocomplete.select(name, pokeAcConfig);
+}
+
+// Boss autocomplete wrappers
+function bossAcInput(val) {
+  Autocomplete.handleInput(val, bossAcConfig);
+}
+
+function bossAcKeydown(e) {
+  Autocomplete.handleKeydown(e, bossAcConfig);
+}
+
+function bossAcSelect(name) {
+  Autocomplete.select(name, bossAcConfig);
+}
+
+// Close autocomplete dropdowns when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ac-wrap')) {
+    document.getElementById('ac-list').classList.remove('open');
+    document.getElementById('boss-ac-list').classList.remove('open');
+  }
+});
+
+// ── FAST MOVE SELECTION ────────────────────────────────
+function onFastMoveChange() {
+  // Fast move details are now shown in the dropdown itself
+  // This function kept for future use if needed
+  checkReady(); // Validate form when fast move changes
+}
+
+// ── STAT LOOKUP ───────────────────────────────────────
+function loadStats(name) {
+  const data = getPokemon(name);
+  const preview = document.getElementById('stat-preview');
+  const status  = document.getElementById('stat-status');
+  const baseStats = document.getElementById('base-stats');
+
+  if (!data) {
+    preview.classList.add('show');
+    status.className = 'status-msg err';
+    status.textContent = `❌ "${name}" not in database.`;
+    currentStats = null;
+    checkReady();
+    return;
+  }
+
+  const {stats, type, type2, canGmax, quickMoves: availableMoves} = data;
+  const {baseAttack: baseAtk, baseDefense: baseDef, baseStamina: baseHp} = stats;
+  const typ = type2 !== type ? `${parseType(type)}/${parseType(type2)}` : parseType(type);
+  
+  // Check if this is a special legendary (doesn't Dynamax/Gigantamax)
+  const isNonMaxLegendary = SPECIAL_MAX_MOVES[data.pokemonId] !== undefined;
+  
+  // Show the pokemon config section (everything after Pokemon Name)
+  document.getElementById('pokemon-config-section').style.display = 'block';
+  
+  // Show/hide Max Type section based on whether Pokemon can Max
+  const maxTypeLabel = document.getElementById('max-type-label');
+  const maxTypeSection = document.getElementById('max-type-section');
+  
+  if (isNonMaxLegendary) {
+    // Hide Max Type section completely for non-Max legendaries
+    maxTypeLabel.style.display = 'none';
+    maxTypeSection.style.display = 'none';
+    // Still set default to dmax for power calculation
+    document.getElementById('max-type').value = 'dmax';
+  } else {
+    // Show Max Type section for normal Pokemon
+    maxTypeLabel.style.display = 'block';
+    maxTypeSection.style.display = 'grid';
+    
+    // Enable/disable G-Max button based on capability
+    const gmaxBtn = document.getElementById('gmax-btn');
+    const dmaxBtn = document.querySelectorAll('.max-type-btn[data-type="dmax"]')[0];
+    
+    gmaxBtn.disabled = !canGmax;
+    dmaxBtn.disabled = false;
+    
+    // If G-Max is currently selected but Pokémon can't G-Max, switch to D-Max
+    if (!canGmax && document.getElementById('max-type').value === 'gmax') {
+      selectMaxType('dmax');
+    }
+  }
+  
+  // Max Spirit is available for all Pokémon (user sets level 0-3)
+  
+  // Get IVs (default to 0 if empty or invalid)
+  const ivAtk = parseInt(document.getElementById('iv-atk').value) || 0;
+  const ivDef = parseInt(document.getElementById('iv-def').value) || 0;
+  const ivHp = parseInt(document.getElementById('iv-hp').value) || 0;
+  
+  // Get level and CPM
+  const level = parseFloat(document.getElementById('poke-level').value) || 40;
+  const cpm = CPM[level] || CPM[40]; // Default to level 40 if not found
+  
+  // Calculate final stats: (Base + IV) × CPM
+  // ATK and DEF can be floats, HP must be integer (floored)
+  const finalAtk = (baseAtk + ivAtk) * cpm;
+  const finalDef = (baseDef + ivDef) * cpm;
+  const finalHp = Math.floor((baseHp + ivHp) * cpm);
+  
+  // Calculate CP
+  const cp = calculateCP(baseAtk, baseDef, baseHp, ivAtk, ivDef, ivHp, level);
+  
+  currentStats = { 
+    pokemonId: data.pokemonId,  // Keep API format for max move lookup
+    atk: finalAtk, 
+    def: finalDef, 
+    hp: finalHp, 
+    type: typ,
+    level: level,
+    cp: cp,
+    ivs: {atk: ivAtk, def: ivDef, hp: ivHp}
+  };
+
+  document.getElementById('p-atk').textContent  = finalAtk.toFixed(2);
+  document.getElementById('p-def').textContent  = finalDef.toFixed(2);
+  document.getElementById('p-hp').textContent   = finalHp;
+  document.getElementById('p-cp').textContent   = cp;
+  document.getElementById('p-type').textContent = typ;
+  baseStats.textContent = `Lv${level}: (Base: ${baseAtk}/${baseDef}/${baseHp} + IV: ${ivAtk}/${ivDef}/${ivHp}) × CPM: ${cpm.toFixed(3)}`;
+  baseStats.innerHTML += `<br>CP = floor((${baseAtk + ivAtk} × √${baseDef + ivDef} × √${baseHp + ivHp} × ${cpm.toFixed(4)}²) / 10) = ${cp}`;
+  
+  // Populate fast move selector
+  const fastMoveSelect = document.getElementById('fast-move-select');
+  const fastMovesPreview = document.getElementById('fast-moves-preview');
+  const moveNames = availableMoves || [];
+  
+  // Save currently selected move before rebuilding dropdown
+  const currentSelection = fastMoveSelect.value;
+  
+  fastMoveSelect.innerHTML = '<option value="">— Select Fast Move —</option>';
+  if (moveNames.length > 0) {
+    moveNames.forEach((moveId) => {
+      const moveData = getFastMove(moveId);
+      if (moveData) {
+        const option = document.createElement('option');
+        option.value = moveData.moveId;
+        const converted = convertFastMoveToDisplay(moveData);
+        option.textContent = `${converted.name} [${converted.type}] (${converted.duration.toFixed(1)}s)`;
+        fastMoveSelect.appendChild(option);
+      }
+    });
+    
+    // Restore previous selection if it's still available
+    if (currentSelection && moveNames.includes(currentSelection)) {
+      fastMoveSelect.value = currentSelection;
+    }
+  } else {
+    fastMovesPreview.innerHTML = `<strong style="color:var(--muted);">No fast move data available</strong>`;
+    fastMovesPreview.style.display = 'block';
+  }
+  
+  status.className   = 'status-msg ok';
+  status.textContent = `✅ ${formatDisplayName(data.pokemonId)} stats loaded! Select your Max Move.`;
+  preview.classList.add('show');
+  checkReady();
+}
+
+// Validate IV input (0-15 only)
+function validateIV(input) {
+  let value = input.value;
+  
+  // Remove non-numeric characters
+  value = value.replace(/[^0-9]/g, '');
+  
+  // Update the display immediately (allows typing)
+  input.value = value;
+  
+  // If empty, don't validate yet (user is still typing)
+  if (value === '') {
+    return;
+  }
+  
+  // Convert to number
+  let num = parseInt(value);
+  
+  // If greater than 15, truncate to just the first digit
+  if (num > 15) {
+    input.value = value.charAt(0);
+    num = parseInt(input.value);
+  }
+  
+  // Trigger stat recalculation only if we have a valid number
+  if (!isNaN(num) && num >= 0 && num <= 15) {
+    const nameInput = document.getElementById('poke-input');
+    if (nameInput && nameInput.value && currentStats) {
+      loadStats(nameInput.value.trim().toLowerCase());
+    }
+  }
+}
+
+// Select Max Type (D-Max or G-Max)
+function selectMaxType(type) {
+  // Check if trying to select G-Max when it's disabled
+  const gmaxBtn = document.getElementById('gmax-btn');
+  if (type === 'gmax' && gmaxBtn.disabled) {
+    return; // Don't allow selection
+  }
+  
+  // Update hidden input
+  document.getElementById('max-type').value = type;
+  
+  // Update button states - only select buttons with data-type (D-Max/G-Max), not data-players (team size)
+  document.querySelectorAll('.max-type-btn[data-type]').forEach(btn => {
+    if (btn.dataset.type === type) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  
+  // Update power display
+  updatePower();
+}
+
+function selectTeamSize(size) {
+  document.querySelectorAll('[data-players]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-players="${size}"]`).classList.add('active');
+  document.getElementById('team-size').value = size;
+}
+
+// Calculate team size multiplier based on fast move duration and trainers in team
+// Formula: ceil(100 * f1 / ((TIT - 1) * f1 + 0.5)) / ceil(100 / TIT)
+// Where: f1 = fast move duration in seconds, TIT = trainers in team (1-4)
+function getTeamSizeMultiplier(fastMoveDurationSeconds, trainersInTeam) {
+  const f1 = fastMoveDurationSeconds; // Already in seconds
+  const TIT = trainersInTeam;
+  
+  const numerator = Math.ceil(100 * f1 / ((TIT - 1) * f1 + 0.5));
+  const denominator = Math.ceil(100 / TIT);
+  
+  return numerator / denominator;
+}
+
+// Validate Max Guard Level input (0-3 only, level 4 coded but hidden from users)
+function validateMaxGuard(input) {
+  let value = input.value.trim();
+  
+  // Remove non-numeric characters
+  value = value.replace(/[^0-9]/g, '');
+  
+  // Update display
+  input.value = value;
+  
+  // If empty, don't validate yet
+  if (value === '') return;
+  
+  let num = parseInt(value);
+  
+  // Check if valid number
+  if (isNaN(num)) {
+    input.value = '0';
+    return;
+  }
+  
+  // Clamp between 0 and 3 (max user can select)
+  if (num < 0) {
+    input.value = '0';
+  } else if (num > 3) {
+    input.value = '3';
+  } else {
+    input.value = num.toString();
+  }
+}
+
+// Update Max Guard Level progress bar
+function updateMaxGuardBar() {
+  const input = document.getElementById('max-guard');
+  const bar = document.getElementById('max-guard-bar');
+  if (!input || !bar) return;
+  
+  const value = parseInt(input.value) || 0;
+  // Level 0 = 0%, Level 1 = 33.33%, Level 2 = 66.67%, Level 3 = 100%
+  const percentage = (value / 3) * 100;
+  bar.style.width = percentage + '%';
+}
+
+// Adjust Max Guard Level by increment (±1)
+function adjustMaxGuard(delta) {
+  const input = document.getElementById('max-guard');
+  if (!input) return;
+  
+  let currentValue = parseInt(input.value);
+  
+  // If empty or invalid, default to 0
+  if (isNaN(currentValue)) {
+    currentValue = 0;
+  }
+  
+  let newValue = currentValue + delta;
+  
+  // Clamp between 0 and 3 (user max)
+  newValue = Math.max(0, Math.min(3, newValue));
+  
+  input.value = newValue.toString();
+  
+  // Update progress bar
+  updateMaxGuardBar();
+}
+
+// Validate Max Spirit Level input (0-3 only, can code 4 for future)
+function validateMaxSpirit(input) {
+  let value = input.value.trim();
+  
+  // Remove non-numeric characters
+  value = value.replace(/[^0-9]/g, '');
+  
+  // Update display
+  input.value = value;
+  
+  // If empty, don't validate yet
+  if (value === '') return;
+  
+  let num = parseInt(value);
+  
+  // Check if valid number
+  if (isNaN(num)) {
+    input.value = '0';
+    return;
+  }
+  
+  // Clamp between 0 and 3 (max user can select)
+  if (num < 0) {
+    input.value = '0';
+  } else if (num > 3) {
+    input.value = '3';
+  } else {
+    input.value = num.toString();
+  }
+}
+
+// Update Max Spirit Level progress bar
+function updateMaxSpiritBar() {
+  const input = document.getElementById('max-spirit');
+  const bar = document.getElementById('max-spirit-bar');
+  if (!input || !bar) return;
+  
+  const value = parseInt(input.value) || 0;
+  // Level 0 = 0%, Level 1 = 33.33%, Level 2 = 66.67%, Level 3 = 100%
+  const percentage = (value / 3) * 100;
+  bar.style.width = percentage + '%';
+}
+
+// Adjust Max Spirit Level by increment (±1)
+function adjustMaxSpirit(delta) {
+  const input = document.getElementById('max-spirit');
+  if (!input) return;
+  
+  let currentValue = parseInt(input.value);
+  
+  // If empty or invalid, default to 0
+  if (isNaN(currentValue)) {
+    currentValue = 0;
+  }
+  
+  let newValue = currentValue + delta;
+  
+  // Clamp between 0 and 3 (user max)
+  newValue = Math.max(0, Math.min(3, newValue));
+  
+  input.value = newValue.toString();
+  
+  // Update progress bar
+  updateMaxSpiritBar();
+}
+
+// Validate Max Attack Level input (1-3 only, level 4 coded but hidden from users)
+function validateMaxAttack(input) {
+  let value = input.value.trim();
+  
+  // Remove non-numeric characters
+  value = value.replace(/[^0-9]/g, '');
+  
+  // Update display
+  input.value = value;
+  
+  // If empty, don't validate yet
+  if (value === '') return;
+  
+  let num = parseInt(value);
+  
+  // Check if valid number
+  if (isNaN(num)) {
+    input.value = '1';
+    return;
+  }
+  
+  // Clamp between 1 and 3
+  if (num < 1) {
+    input.value = '1';
+  } else if (num > 3) {
+    input.value = '3';
+  } else {
+    input.value = num.toString();
+  }
+}
+
+// Update Max Attack Level progress bar
+function updateMaxAttackBar() {
+  const input = document.getElementById('max-level');
+  const bar = document.getElementById('max-attack-bar');
+  if (!input || !bar) return;
+  
+  const value = parseInt(input.value) || 1;
+  // Level 1 = 33.33%, Level 2 = 66.67%, Level 3 = 100%
+  const percentage = (value / 3) * 100;
+  bar.style.width = percentage + '%';
+}
+
+// Adjust Max Attack Level by increment (±1)
+function adjustMaxAttack(delta) {
+  const input = document.getElementById('max-level');
+  if (!input) return;
+  
+  let currentValue = parseInt(input.value);
+  
+  // If empty or invalid, default to 1
+  if (isNaN(currentValue)) {
+    currentValue = 1;
+  }
+  
+  let newValue = currentValue + delta;
+  
+  // Clamp between 1 and 3
+  newValue = Math.max(1, Math.min(3, newValue));
+  
+  input.value = newValue.toString();
+  
+  // Update progress bar
+  updateMaxAttackBar();
+  
+  // Update power display
+  updatePower();
+}
+
+// Validate level input (1-50, including half levels like 1.5, 2.5, etc.)
+function validateLevel(input) {
+  let value = input.value.trim();
+  
+  // Remove non-numeric characters except decimal point
+  value = value.replace(/[^0-9.]/g, '');
+  
+  // Update display
+  input.value = value;
+  
+  // If empty, don't validate yet
+  if (value === '') return;
+  
+  let num = parseFloat(value);
+  
+  // Check if valid number
+  if (isNaN(num)) {
+    input.value = '';
+    return;
+  }
+  
+  // Clamp between 1 and 50
+  if (num < 1) {
+    input.value = '1';
+    num = 1;
+  } else if (num > 50) {
+    input.value = '50';
+    num = 50;
+  }
+  
+  // Round to nearest 0.5
+  num = Math.round(num * 2) / 2;
+  input.value = num.toString();
+  
+  // Trigger stat recalculation
+  const nameInput = document.getElementById('poke-input');
+  if (nameInput && nameInput.value && currentStats) {
+    loadStats(nameInput.value.trim().toLowerCase());
+  }
+}
+
+// Update level progress bar
+function updateLevelBar() {
+  const input = document.getElementById('poke-level');
+  const bar = document.getElementById('level-bar');
+  if (!input || !bar) return;
+  
+  const value = parseFloat(input.value) || 1;
+  const percentage = ((value - 1) / 49) * 100; // 1-50 range = 49 levels
+  bar.style.width = percentage + '%';
+}
+
+// Adjust level by increment (±0.5)
+function adjustLevel(delta) {
+  const input = document.getElementById('poke-level');
+  if (!input) return;
+  
+  let currentValue = parseFloat(input.value);
+  
+  // If empty or invalid, default to 1
+  if (isNaN(currentValue)) {
+    currentValue = 1;
+  }
+  
+  let newValue = currentValue + delta;
+  
+  // Clamp between 1 and 50
+  newValue = Math.max(1, Math.min(50, newValue));
+  
+  // Round to nearest 0.5
+  newValue = Math.round(newValue * 2) / 2;
+  
+  input.value = newValue.toString();
+  
+  // Update progress bar
+  updateLevelBar();
+  
+  // Trigger stat recalculation
+  const nameInput = document.getElementById('poke-input');
+  if (nameInput && nameInput.value && currentStats) {
+    loadStats(nameInput.value.trim().toLowerCase());
+  }
+}
+
+// Update IV progress bar display
+function updateIVBar(stat) {
+  const input = document.getElementById(`iv-${stat}`);
+  const bar = document.getElementById(`iv-bar-${stat}`);
+  if (!input || !bar) return;
+  
+  const value = parseInt(input.value) || 0;
+  const percentage = (value / 15) * 100;
+  bar.style.width = percentage + '%';
+}
+
+// Initialize IV bars, level bar, max attack bar, max guard bar, and max spirit bar on page load
+document.addEventListener('DOMContentLoaded', () => {
+  updateIVBar('atk');
+  updateIVBar('def');
+  updateIVBar('hp');
+  updateLevelBar();
+  updateMaxAttackBar();
+  updateMaxGuardBar();
+  updateMaxSpiritBar();
+});
+
+// Adjust IV by increment (±1)
+function adjustIV(inputId, delta) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  
+  let currentValue = parseInt(input.value);
+  
+  // If empty or invalid, treat as 0 for subtraction, 15 for addition
+  if (isNaN(currentValue)) {
+    currentValue = delta > 0 ? 0 : 15;
+  }
+  
+  let newValue = currentValue + delta;
+  
+  // Clamp between 0 and 15
+  newValue = Math.max(0, Math.min(15, newValue));
+  
+  input.value = newValue;
+  
+  // Update progress bar
+  const stat = inputId.replace('iv-', '');
+  updateIVBar(stat);
+  
+  // Trigger stat recalculation
+  const nameInput = document.getElementById('poke-input');
+  if (nameInput && nameInput.value && currentStats) {
+    loadStats(nameInput.value.trim().toLowerCase());
+  }
+}
+
+function updatePower() {
+  const type  = document.getElementById('max-type').value;
+  const level = document.getElementById('max-level').value;
+  const box   = document.getElementById('power-box');
+  if (type && level) {
+    box.style.display = 'block';
+    document.getElementById('power-val').textContent = MAX_POWER[type][parseInt(level)];
+  } else {
+    box.style.display = 'none';
+  }
+  checkReady();
+}
+
+function checkReady() {
+  const type  = document.getElementById('max-type').value;
+  const level = document.getElementById('max-level').value;
+  const fastMove = document.getElementById('fast-move-select').value;
+  const validationMsg = document.getElementById('add-validation-msg');
+  
+  const isReady = currentStats && type && level && fastMove;
+  document.getElementById('add-btn').disabled = !isReady;
+  
+  // Show validation message if Pokémon is selected but fast move is missing
+  if (currentStats && type && level && !fastMove) {
+    validationMsg.textContent = '⚠️ Please select a fast move';
+    validationMsg.style.display = 'block';
+  } else {
+    validationMsg.style.display = 'none';
+  }
+}
+
+// ── ROSTER ────────────────────────────────────────────
+function addPokemon() {
+  if (!currentStats) return;
+  const type  = document.getElementById('max-type').value;
+  const level = parseInt(document.getElementById('max-level').value);
+  const power = MAX_POWER[type][level];
+  const spiritLevel = parseInt(document.getElementById('max-spirit').value) || 0;
+  const guardLevel = parseInt(document.getElementById('max-guard').value) || 0;
+  
+  // Get selected fast move and convert to display format
+  const fastMoveSelect = document.getElementById('fast-move-select');
+  const fastMoveId = fastMoveSelect.value;
+  const fastMoveApi = fastMoveId ? getFastMove(fastMoveId) : null;
+  const fastMove = convertFastMoveToDisplay(fastMoveApi);
+  
+  // Validate: D-Max requires a fast move (except special legendaries)
+  const isSpecialLegendary = SPECIAL_MAX_MOVES[currentStats.pokemonId];
+  
+  if (type === 'dmax' && !fastMove && !isSpecialLegendary) {
+    alert('D-Max Pokemon must have a fast move selected!');
+    return;
+  }
+  
+  // Determine max move based on Pokemon API ID, fast move type, and max type
+  const maxMove = getMaxMove(
+    currentStats.pokemonId,  // API format: "PIKACHU" or "ZACIAN_CROWNED_SWORD_FORM"
+    fastMove?.type,          // Display format: "Electric" or null
+    type                     // "dmax" or "gmax"
+  );
+  
+  // Format display name with D-Max/G-Max prefix
+  const displayName = formatRosterName(currentStats.pokemonId, type);
+
+  roster.unshift({ 
+    pokemonId: currentStats.pokemonId,  // Keep API format for reference
+    name: displayName,                  // "D-Max Pikachu" or "G-Max Crown Zacian"
+    atk: currentStats.atk,
+    def: currentStats.def,
+    hp: currentStats.hp,
+    type: currentStats.type,
+    level: currentStats.level,
+    cp: currentStats.cp,
+    ivs: currentStats.ivs,
+    power, 
+    maxtype: type, 
+    maxlevel: level,
+    maxGuard: guardLevel,   // Max Guard shield level (0-3)
+    maxSpirit: spiritLevel, // Max Spirit healing level (0-3)
+    fastMove: fastMove,     // Display format: {name, type, power, duration, energy}
+    maxMove: maxMove,       // {name, type}
+    bestBuddy: false,       // Best Buddy boost (adds +1 level)
+    id: Date.now() 
+  });
+  
+  // Navigate to page 1 where the new Pokémon appears (at top of list)
+  rosterCurrentPage = 1;
+  
+  saveRoster(); renderRoster();
+
+  // Reset
+  document.getElementById('poke-input').value = '';
+  document.getElementById('pokemon-config-section').style.display = 'none';
+  document.getElementById('fast-move-select').innerHTML = '<option value="">— Select Fast Move —</option>';
+  selectMaxType('dmax'); // Reset to D-Max
+  document.getElementById('max-level').value  = '1';
+  document.getElementById('max-guard').value = '0';
+  document.getElementById('max-spirit').value = '0';
+  document.getElementById('poke-level').value = 40;
+  document.getElementById('iv-atk').value = 15;
+  document.getElementById('iv-def').value = 15;
+  document.getElementById('iv-hp').value = 15;
+  updateLevelBar();
+  updateMaxAttackBar();
+  updateMaxGuardBar();
+  updateMaxSpiritBar();
+  updateIVBar('atk');
+  updateIVBar('def');
+  updateIVBar('hp');
+  document.getElementById('power-box').style.display = 'none';
+  document.getElementById('stat-preview').classList.remove('show');
+  document.getElementById('add-btn').disabled = true;
+  currentStats = null;
+}
+
+function removePokemon(id) {
+  roster = roster.filter(p => p.id !== id);
+  
+  // Adjust page if current page would be empty after removal
+  const totalPages = Math.ceil(roster.length / ROSTER_ITEMS_PER_PAGE);
+  if (rosterCurrentPage > totalPages && totalPages > 0) {
+    rosterCurrentPage = totalPages;
+  }
+  if (roster.length === 0) {
+    rosterCurrentPage = 1;
+  }
+  
+  saveRoster(); renderRoster();
+}
+
+function toggleBestBuddy(id) {
+  const pokemon = roster.find(p => p.id === id);
+  if (!pokemon) return;
+  
+  // If turning ON Best Buddy for this Pokémon
+  if (!pokemon.bestBuddy) {
+    // First, turn OFF Best Buddy for all other Pokémon and revert their stats
+    roster.forEach(p => {
+      if (p.id !== id && p.bestBuddy) {
+        p.bestBuddy = false;
+        
+        // Revert stats to original level
+        const baseLevel = p.level || 40;
+        const cpm = CPM[baseLevel] || CPM[40];
+        
+        const pokeData = getPokemon(p.pokemonId);
+        if (pokeData) {
+          const {baseAttack: baseAtk, baseDefense: baseDef, baseStamina: baseHp} = pokeData.stats;
+          const ivs = p.ivs || {atk: 0, def: 0, hp: 0};
+          
+          p.atk = (baseAtk + ivs.atk) * cpm;
+          p.def = (baseDef + ivs.def) * cpm;
+          p.hp = Math.floor((baseHp + ivs.hp) * cpm);
+          p.cp = calculateCP(baseAtk, baseDef, baseHp, ivs.atk, ivs.def, ivs.hp, baseLevel);
+        }
+      }
+    });
+    
+    // Now turn ON for this Pokémon
+    pokemon.bestBuddy = true;
+    
+    // Recalculate stats with +1 level boost
+    const baseLevel = pokemon.level || 40;
+    const buddyLevel = Math.min(baseLevel + 1, 51); // Cap at level 51
+    const cpm = CPM[buddyLevel] || CPM[40];
+    
+    // Get base stats from POKEDEX
+    const pokeData = getPokemon(pokemon.pokemonId);
+    if (pokeData) {
+      const {baseAttack: baseAtk, baseDefense: baseDef, baseStamina: baseHp} = pokeData.stats;
+      const ivs = pokemon.ivs || {atk: 0, def: 0, hp: 0};
+      
+      // Recalculate with Best Buddy CPM
+      pokemon.atk = (baseAtk + ivs.atk) * cpm;
+      pokemon.def = (baseDef + ivs.def) * cpm;
+      pokemon.hp = Math.floor((baseHp + ivs.hp) * cpm);
+      
+      // Recalculate CP with Best Buddy level
+      pokemon.cp = calculateCP(baseAtk, baseDef, baseHp, ivs.atk, ivs.def, ivs.hp, buddyLevel);
+    }
+  } else {
+    // Turning OFF Best Buddy - revert to original level
+    pokemon.bestBuddy = false;
+    
+    // Recalculate stats with original level
+    const baseLevel = pokemon.level || 40;
+    const cpm = CPM[baseLevel] || CPM[40];
+    
+    // Get base stats from POKEDEX
+    const pokeData = getPokemon(pokemon.pokemonId);
+    if (pokeData) {
+      const {baseAttack: baseAtk, baseDefense: baseDef, baseStamina: baseHp} = pokeData.stats;
+      const ivs = pokemon.ivs || {atk: 0, def: 0, hp: 0};
+      
+      // Recalculate with normal CPM
+      pokemon.atk = (baseAtk + ivs.atk) * cpm;
+      pokemon.def = (baseDef + ivs.def) * cpm;
+      pokemon.hp = Math.floor((baseHp + ivs.hp) * cpm);
+      
+      // Recalculate CP with normal level
+      pokemon.cp = calculateCP(baseAtk, baseDef, baseHp, ivs.atk, ivs.def, ivs.hp, baseLevel);
+    }
+  }
+  
+  saveRoster(); renderRoster();
+}
+
+// Toggle Dynamax Cannon boost
+function toggleDynamaxCannon() {
+  dynamaxCannonActive = !dynamaxCannonActive;
+  
+  const btn = document.getElementById('dynamax-cannon-btn');
+  const text = document.getElementById('cannon-text');
+  
+  if (dynamaxCannonActive) {
+    btn.classList.add('active');
+    text.textContent = 'Dynamax Cannon: ON';
+  } else {
+    btn.classList.remove('active');
+    text.textContent = 'Dynamax Cannon: OFF';
+  }
+  
+  // Re-render roster to update displayed power values
+  renderRoster();
+}
+
+// Get effective power with Dynamax Cannon boost
+function getEffectivePower(pokemon) {
+  // Check if this Pokémon can receive the boost (only Zacian and Zamazenta cannot)
+  const canBoost = !NO_DYNAMAX_CANNON_BOOST.has(pokemon.pokemonId);
+  
+  if (!dynamaxCannonActive || !canBoost) {
+    return pokemon.power; // No boost
+  }
+  
+  // Boost: increase max level by 1 (Level 3 → Level 4)
+  const boostedLevel = Math.min(pokemon.maxlevel + 1, 4); // Cap at level 4
+  const boostedPower = MAX_POWER[pokemon.maxtype][boostedLevel];
+  
+  return boostedPower || pokemon.power;
+}
+
+// Get effective shield HP with Dynamax Cannon boost
+function getEffectiveShield(pokemon) {
+  const canBoost = !NO_DYNAMAX_CANNON_BOOST.has(pokemon.pokemonId);
+  
+  if (!dynamaxCannonActive || !canBoost) {
+    return pokemon.maxGuard > 0 ? MAX_GUARD_SHIELD[pokemon.maxGuard] : 0;
+  }
+  
+  // Boost: increase guard level by 1 (can boost from 0→1)
+  const boostedLevel = Math.min(pokemon.maxGuard + 1, 4);
+  return MAX_GUARD_SHIELD[boostedLevel];
+}
+
+// Get effective heal with Dynamax Cannon boost
+// Get effective HP for scoring (Zamazenta gets bonus HP from Guard level)
+function getEffectiveHP(pokemon) {
+  // Zamazenta (Crowned Shield Form) gains fixed HP per Guard level
+  // Guard levels: 0/1/2/3/4 = +0/20/40/60/80 HP
+  if (pokemon.pokemonId === 'ZAMAZENTA_CROWNED_SHIELD_FORM') {
+    const HP_PER_GUARD_LEVEL = {0: 0, 1: 20, 2: 40, 3: 60, 4: 80};
+    const canBoost = !NO_DYNAMAX_CANNON_BOOST.has(pokemon.pokemonId);
+    const effectiveGuardLevel = (dynamaxCannonActive && canBoost)
+      ? Math.min(pokemon.maxGuard + 1, 4)
+      : pokemon.maxGuard;
+    
+    const bonusHP = HP_PER_GUARD_LEVEL[effectiveGuardLevel];
+    return pokemon.hp + bonusHP;
+  }
+  
+  // All other Pokémon use base HP
+  return pokemon.hp;
+}
+
+function getEffectiveHeal(pokemon) {
+  const canBoost = !NO_DYNAMAX_CANNON_BOOST.has(pokemon.pokemonId);
+  
+  if (!dynamaxCannonActive || !canBoost) {
+    return pokemon.maxSpirit > 0 ? Math.floor(pokemon.hp * MAX_SPIRIT_HEAL[pokemon.maxSpirit]) : 0;
+  }
+  
+  // Boost: increase spirit level by 1 (can boost from 0→1)
+  const boostedLevel = Math.min(pokemon.maxSpirit + 1, 4);
+  return Math.floor(pokemon.hp * MAX_SPIRIT_HEAL[boostedLevel]);
+}
+
+function clearRoster() {
+  if (roster.length === 0) return; // Nothing to clear
+  if (!confirm('Clear all Pokémon from your roster? This cannot be undone.')) {
+    return; // User cancelled
+  }
+  roster = [];
+  saveRoster();
+  renderRoster();
+  document.getElementById('results').innerHTML = '<div class="no-results"><div class="icon">🔍</div>Select a boss, add your Pokémon,<br>then click <strong style="color:var(--accent)">Analyze vs Boss</strong>.</div>';
+  document.getElementById('tip').style.display = 'none';
+}
+
+function exportRoster() {
+  if (roster.length === 0) {
+    alert('No Pokémon in roster to export.');
+    return;
+  }
+  
+  const exportData = {
+    version: '2.5.0',
+    exportDate: new Date().toISOString(),
+    roster: roster
+  };
+  
+  const dataStr = JSON.stringify(exportData, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(dataBlob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `max-battle-roster-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  // console.log('✓ Roster exported:', roster.length, 'Pokémon');
+}
+
+function importRoster(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const importData = JSON.parse(e.target.result);
+      
+      // Validate structure
+      if (!importData.roster || !Array.isArray(importData.roster)) {
+        alert('Invalid roster file format.');
+        return;
+      }
+      
+      // Check if roster will be replaced
+      if (roster.length > 0) {
+        if (!confirm(`This will replace your current roster (${roster.length} Pokémon) with the imported roster (${importData.roster.length} Pokémon). Continue?`)) {
+          return;
+        }
+      }
+      
+      // Validate each Pokemon entry
+      const validRoster = importData.roster.filter(mon => {
+        return mon.pokemonId && mon.level && mon.ivAtk !== undefined && 
+               mon.ivDef !== undefined && mon.ivHp !== undefined && 
+               mon.maxType && mon.fastMove;
+      });
+      
+      if (validRoster.length !== importData.roster.length) {
+        // console.warn('Some Pokémon entries were invalid and skipped.');
+      }
+      
+      roster = validRoster;
+      saveRoster();
+      renderRoster();
+      
+      alert(`✓ Imported ${validRoster.length} Pokémon successfully!`);
+      // console.log('✓ Roster imported:', validRoster.length, 'Pokémon');
+      
+    } catch (error) {
+      console.error('Import error:', error);
+      alert('Error reading roster file. Please check the file format.');
+    }
+  };
+  
+  reader.readAsText(file);
+  
+  // Reset file input so same file can be imported again
+  event.target.value = '';
+}
+
+function saveRoster() { localStorage.setItem('maxbattle_v5', JSON.stringify(roster)); }
+
+function renderRoster() {
+  const el = document.getElementById('roster-area');
+  document.getElementById('roster-count').textContent = roster.length;
+  
+  if (!roster.length) { 
+    el.innerHTML = '<div class="empty-state">No Pokémon added yet.</div>'; 
+    rosterCurrentPage = 1; // Reset page when roster is empty
+    return; 
+  }
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(roster.length / ROSTER_ITEMS_PER_PAGE);
+  
+  // Ensure current page is valid
+  if (rosterCurrentPage > totalPages) {
+    rosterCurrentPage = totalPages;
+  }
+  
+  const startIdx = (rosterCurrentPage - 1) * ROSTER_ITEMS_PER_PAGE;
+  const endIdx = startIdx + ROSTER_ITEMS_PER_PAGE;
+  const pageRoster = roster.slice(startIdx, endIdx);
+  
+  const rosterHTML = pageRoster.map(p => {
+    const ivDisplay = p.ivs ? `IVs: ${p.ivs.atk}/${p.ivs.def}/${p.ivs.hp}` : '';
+    const levelDisplay = p.level ? `Lv${p.level}${p.bestBuddy ? '+1' : ''}` : '';
+    const cpDisplay = p.cp ? `CP ${p.cp}` : '';
+    const buddyClass = p.bestBuddy ? 'active' : '';
+    const buddyText = p.bestBuddy ? 'BEST BUDDY' : 'Best Buddy';
+    
+    // Max Move stats (with Dynamax Cannon boost if active)
+    const attackPower = getEffectivePower(p);
+    const shieldHP = getEffectiveShield(p);
+    const healHP = getEffectiveHeal(p);
+    
+    // Fast move display - already in display format
+    const fastMoveDisplay = p.fastMove 
+      ? `${p.fastMove.name} [${p.fastMove.type}] (${p.fastMove.duration.toFixed(1)}s)`
+      : `[${p.type}] (No fast move)`;
+    
+    // Max move display
+    const maxMoveDisplay = p.maxMove 
+      ? `${p.maxMove.name} [${p.maxMove.type}]`
+      : 'None';
+    
+    return `
+    <div class="roster-item">
+      <div>
+        <div class="roster-name">
+          ${esc(p.name)} [${p.type}]
+        </div>
+        <div class="roster-meta" style="margin-top:3px;">
+          <button class="buddy-btn ${buddyClass}" onclick="toggleBestBuddy(${p.id})">${buddyText}</button>
+          <span style="margin-left:6px;">${cpDisplay}</span>
+          <span style="margin-left:8px;">${ivDisplay}</span>
+        </div>
+        <div class="roster-meta" style="margin-top:2px;">ATK ${p.atk.toFixed(2)} · DEF ${p.def.toFixed(2)} · HP ${p.hp} · ${levelDisplay}</div>
+        <div class="roster-meta" style="margin-top:2px;">Fast Move: ${fastMoveDisplay}</div>
+        <div class="roster-meta" style="margin-top:2px;">Max Move: ${maxMoveDisplay}</div>
+        <div class="roster-meta" style="margin-top:2px;">${attackPower} Power · ${shieldHP} HP/Shield · ${healHP} HP/Heal</div>
+      </div>
+      <button class="remove-btn" onclick="removePokemon(${p.id})">✕</button>
+    </div>`;
+  }).join('');
+  
+  // Add pagination controls if needed
+  const paginationHTML = totalPages > 1 ? `
+    <div class="roster-pagination">
+      <button class="btn btn-page" onclick="changeRosterPage('prev')" ${rosterCurrentPage === 1 ? 'disabled' : ''}>◀ Prev</button>
+      <div class="page-input-wrap">
+        <span style="font-size:0.8rem;color:var(--muted);">Page</span>
+        <input type="number" 
+               class="page-number-input" 
+               value="${rosterCurrentPage}" 
+               min="1" 
+               max="${totalPages}"
+               onchange="goToRosterPage(this.value)"
+               onkeypress="if(event.key==='Enter') goToRosterPage(this.value)">
+        <span style="font-size:0.8rem;color:var(--muted);">of ${totalPages}</span>
+      </div>
+      <button class="btn btn-page" onclick="changeRosterPage('next')" ${rosterCurrentPage === totalPages ? 'disabled' : ''}>Next ▶</button>
+    </div>
+  ` : '';
+  
+  el.innerHTML = '<div class="roster-list">' + rosterHTML + '</div>' + paginationHTML;
+}
+
+// ── BOSS SELECTION ────────────────────────────────────
+function onBossChange(name) {
+  try {
+    // Capitalize first letter for lookup
+    name = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+    selectedBoss = getBoss(name.toUpperCase()) || null;
+    const box = document.getElementById('boss-info');
+
+    if (!selectedBoss) { box.style.display='none'; return; }
+
+    // Get stats from boss object
+    const bs = selectedBoss.stats || {baseAttack:100,baseDefense:100,baseStamina:100};
+    selectedBoss.baseAtk = bs.baseAttack;
+    selectedBoss.baseDef = bs.baseDefense;
+    selectedBoss.baseHp  = bs.baseStamina;
+
+    const weakTo   = ALL_TYPES.filter(t => effectiveness(t,getBossTypes(selectedBoss))>1)
+                               .sort((a,b)=>effectiveness(b,getBossTypes(selectedBoss))-effectiveness(a,getBossTypes(selectedBoss)));
+    const resistTo = ALL_TYPES.filter(t => { const e=effectiveness(t,getBossTypes(selectedBoss)); return e<1&&e>0; });
+
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div style="font-weight:600;font-size:1rem;color:var(--text)">${formatDisplayName(selectedBoss.pokemonId)}</div>
+    <div class="boss-types">${getBossTypes(selectedBoss).map(typePill).join('')}</div>
+    <div class="stat-chips" style="margin-top:8px;">
+      <div class="stat-chip">ATK <span>${bs.baseAttack}</span></div>
+      <div class="stat-chip">DEF <span>${bs.baseDefense}</span></div>
+      <div class="stat-chip">HP <span>${bs.baseStamina}</span></div>
+    </div>
+    <div class="info-row"><strong>Weak to:</strong> ${weakTo.map(t=>{
+      const e=effectiveness(t,getBossTypes(selectedBoss));
+      const mult = e>=2.56?' ×2.56':e>=1.6?' ×1.6':'';
+      return `<span style="color:${TYPE_COLORS[t]}">${t}${mult}</span>`;
+    }).join(', ')||'—'}</div>
+    <div class="info-row res"><strong>Resists:</strong> ${resistTo.map(t=>{
+      const e=effectiveness(t,getBossTypes(selectedBoss));
+      const mult = e<=0.390625?' ×0.39':e<=0.625?' ×0.625':'';
+      return `${t}${mult}`;
+    }).join(', ')||'—'}</div>
+    
+    <label style="margin-top:18px;color:var(--accent);font-weight:600;">Move Selection</label>
+    
+    <button class="btn btn-cannon active" id="all-moves-btn" onclick="toggleAllMoveCombos()" style="margin-top:12px;">
+      <span id="all-moves-text">All Moves: ON</span>
+    </button>
+    
+    <label style="margin-top:12px;display:block;font-size:.78rem;letter-spacing:.03em;color:var(--muted);font-weight:500;opacity:0.5;" id="large-move-label">Large Move</label>
+    <select id="boss-large-move" style="margin-top:4px;opacity:0.5;" disabled>
+      ${selectedBoss.chargedMoves ? selectedBoss.chargedMoves.map(move => {
+        const moveData = CHARGED_MOVES[move];
+        const displayText = moveData 
+          ? `${move} [${parseType(moveData.type)}] ${moveData.power}pwr ${(moveData.durationMs/1000).toFixed(1)}s`
+          : move;
+        return `<option value="${move}">${displayText}</option>`;
+      }).join('') : '<option>Unknown</option>'}
+    </select>
+    
+    <label style="margin-top:12px;display:block;font-size:.78rem;letter-spacing:.03em;color:var(--muted);font-weight:500;opacity:0.5;" id="targeted-move-label">Targeted Move</label>
+    <select id="boss-targeted-move" style="margin-top:4px;opacity:0.5;" disabled>
+      ${selectedBoss.chargedMoves ? selectedBoss.chargedMoves.map(move => {
+        const moveData = CHARGED_MOVES[move];
+        const displayText = moveData 
+          ? `${move} [${parseType(moveData.type)}] ${moveData.power}pwr ${(moveData.durationMs/1000).toFixed(1)}s`
+          : move;
+        return `<option value="${move}">${displayText}</option>`;
+      }).join('') : '<option>Unknown</option>'}
+    </select>
+  `;
+  } catch (error) {
+    console.error('Error in onBossChange:', error);
+    alert('Error selecting boss: ' + error.message);
+  }
+}
+
+// ── ANALYSIS ──────────────────────────────────────────
+function analyzeTeam() {
+  try {
+    // Reset all pagination to page 1 for new analysis
+    categoryPages['Attackers'] = 1;
+    categoryPages['Shielders'] = 1;
+    categoryPages['Tanks'] = 1;
+    categoryPages['Healers'] = 1;
+    
+    if (!roster.length) { alert('Add at least one Pokémon first!'); return; }
+    if (!selectedBoss) { alert('Please select a boss first!'); return; }
+    const boss = selectedBoss;
+    const currentWeather = document.getElementById('weather-select').value;
+
+    const scored = roster.map(p => {
+    // Use max move type if available, otherwise fallback to Pokemon type
+    const attackType = p.maxMove ? p.maxMove.type : p.type;
+    const atkEff = effectiveness(attackType, getBossTypes(boss));
+
+    const bossAtk  = boss.stats.baseAttack;
+    const bossDef  = boss.stats.baseDefense;
+    
+    // Calculate STAB for attacker (does move type match Pokémon type?)
+    const atkSTAB = getSTAB(attackType, p.type);
+    
+    // Calculate weather boost for attacker's max move
+    const atkWeather = getWeatherBoost(attackType, currentWeather);
+    
+    // Use effective power with Dynamax Cannon boost
+    const effectivePower = getEffectivePower(p);
+    // Calculate effective max level for display
+    const effectiveMaxLevel = dynamaxCannonActive && !NO_DYNAMAX_CANNON_BOOST.has(p.pokemonId)
+      ? Math.min(p.maxlevel + 1, 4)
+      : p.maxlevel;
+    const atkDmg = calcDamage(effectivePower, p.atk, bossDef, atkEff, atkSTAB, atkWeather);
+    
+    // Calculate charged move damage
+    const useAllCombos = allMovesActive;
+    let avgChargedMoveDmg;
+    
+    if (useAllCombos) {
+      // Calculate average damage across all moves
+      // Each move calculated once as Large Move, once as Targeted Move
+      const moves = boss.chargedMoves;
+      let totalDmg = 0;
+      let calcCount = 0;
+      
+      // Loop through each move once
+      for (let i = 0; i < moves.length; i++) {
+        const moveData = CHARGED_MOVES[moves[i]];
+        const moveType = parseType(moveData.type);
+        
+        // Calculate STAB for boss (does charged move type match boss type?)
+        const bossType = getBossTypes(boss).join('/'); // "Steel/Dragon" or "Electric"
+        const bossSTAB = getSTAB(moveType, bossType);
+        
+        // Calculate weather boost for boss's charged move
+        const bossWeather = getWeatherBoost(moveType, currentWeather);
+        
+        // Calculate type effectiveness for this move
+        const moveEff = (() => {
+          const defenderTypes = p.type.includes('/') ? p.type.split('/') : [p.type];
+          return defenderTypes.reduce((mult, dt) => mult * getEff(parseType(moveData.type), dt), 1);
+        })();
+        
+        // Calculate damage for this move
+        const moveDmg = calcDamage(moveData.power, bossAtk, p.def, moveEff, bossSTAB, bossWeather);
+        // Future: Apply Large Move specific formula here
+        // Future: Apply Targeted Move specific formula here
+        
+        // Add this move's damage twice (once as large, once as targeted)
+        totalDmg += moveDmg;  // As Large Move
+        totalDmg += moveDmg;  // As Targeted Move
+        calcCount += 2;
+      }
+      
+      avgChargedMoveDmg = totalDmg / calcCount;
+    } else {
+      // Use manually selected moves
+      const largeMoveName = getSelectedBossLargeMove();
+      const targetedMoveName = getSelectedBossTargetedMove();
+      const largeMoveData = CHARGED_MOVES[largeMoveName];
+      const targetedMoveData = CHARGED_MOVES[targetedMoveName];
+      
+      // Calculate damage from boss's Large Move
+      const largeMoveType = parseType(largeMoveData.type);
+      const largeMovePower = largeMoveData.power;
+      
+      // Calculate STAB for boss's Large Move
+      const bossType = getBossTypes(boss).join('/');
+      const largeSTAB = getSTAB(largeMoveType, bossType);
+      
+      // Calculate weather boost for boss's Large Move
+      const largeWeather = getWeatherBoost(largeMoveType, currentWeather);
+      
+      const largeMoveEff = (() => {
+        const defenderTypes = p.type.includes('/') ? p.type.split('/') : [p.type];
+        return defenderTypes.reduce((mult, dt) => mult * getEff(largeMoveType, dt), 1);
+      })();
+      const largeMoveDmg = calcDamage(largeMovePower, bossAtk, p.def, largeMoveEff, largeSTAB, largeWeather);
+      // Future: Apply Large Move specific formula here
+      
+      // Calculate damage from boss's Targeted Move
+      const targetedMoveType = parseType(targetedMoveData.type);
+      const targetedMovePower = targetedMoveData.power;
+      
+      // Calculate STAB for boss's Targeted Move
+      const targetedSTAB = getSTAB(targetedMoveType, bossType);
+      
+      // Calculate weather boost for boss's Targeted Move
+      const targetedWeather = getWeatherBoost(targetedMoveType, currentWeather);
+      
+      const targetedMoveEff = (() => {
+        const defenderTypes = p.type.includes('/') ? p.type.split('/') : [p.type];
+        return defenderTypes.reduce((mult, dt) => mult * getEff(targetedMoveType, dt), 1);
+      })();
+      const targetedMoveDmg = calcDamage(targetedMovePower, bossAtk, p.def, targetedMoveEff, targetedSTAB, targetedWeather);
+      // Future: Apply Targeted Move specific formula here
+      
+      // Average damage from both charged moves
+      avgChargedMoveDmg = (largeMoveDmg + targetedMoveDmg) / 2;
+    }
+    
+    // Get effective HP (Zamazenta gets bonus HP from Guard level)
+    const effectiveHP = getEffectiveHP(p);
+    
+    const tankPct = (avgChargedMoveDmg / effectiveHP) * 100;
+    
+    // Get team size multiplier based on fast move duration
+    const trainersInTeam = parseInt(document.getElementById('team-size').value) || 1;
+    const fastMoveDuration = p.fastMove ? p.fastMove.duration : 1.0; // Duration in seconds
+    const teamMultiplier = getTeamSizeMultiplier(fastMoveDuration, trainersInTeam);
+    
+    // Shielder scoring with level adjustment, Dynamax Cannon boost, and team size multiplier
+    // Get effective guard level (can boost from 0→1)
+    const effectiveGuardLevel = dynamaxCannonActive && !NO_DYNAMAX_CANNON_BOOST.has(p.pokemonId)
+      ? Math.min(p.maxGuard + 1, 4)
+      : p.maxGuard;
+    const levelAdjustment = effectiveGuardLevel > 0 ? MAX_GUARD_ADJUSTMENT[effectiveGuardLevel] : 1;
+    const shieldScore = avgChargedMoveDmg * levelAdjustment * teamMultiplier;  // Lower score = better shielder
+    
+    // Tank scoring with team size multiplier
+    // Uses average damage from both Large Move and Targeted Move
+    const tankScore = tankPct * teamMultiplier;  // Lower score = better tank
+    
+    // Healer scoring (Max Spirit healing) with Dynamax Cannon boost
+    // Get effective spirit level (can boost from 0→1)
+    const effectiveSpiritLevel = dynamaxCannonActive && !NO_DYNAMAX_CANNON_BOOST.has(p.pokemonId)
+      ? Math.min(p.maxSpirit + 1, 4)
+      : p.maxSpirit;
+    const effectiveHeal = getEffectiveHeal(p);
+    const healAmount = effectiveHeal;
+    const healScore = healAmount;       // Display: Higher healing = better healer
+    const healBarScore = healAmount;    // Bar score: Higher = better
+    
+    // Calculated scores for progress bars (removed tankBarScore - now using tankScore directly)
+
+    return { pokemonId:p.pokemonId, name:p.name, type:p.type, maxMoveName:p.maxMove?.name, atkDmg, avgChargedMoveDmg, tankPct, tankScore, shieldScore, healAmount, healScore, healBarScore, atkEff, maxSpirit:p.maxSpirit, maxGuard:p.maxGuard, maxlevel:p.maxlevel, effectiveMaxLevel, effectiveGuardLevel, effectiveSpiritLevel };
+  });
+
+  // Filter healers (those with Max Spirit > 0, or Max Spirit = 0 but would be boosted by Dynamax Cannon)
+  const healers = scored.filter(p => {
+    if (p.maxSpirit > 0) return true; // Already has healing
+    // Include if Dynamax Cannon would boost from 0→1
+    return dynamaxCannonActive && !NO_DYNAMAX_CANNON_BOOST.has(p.pokemonId);
+  });
+  
+  // Filter shielders (those with Max Guard > 0, or Max Guard = 0 but would be boosted by Dynamax Cannon)
+  const shielders = scored.filter(p => {
+    if (p.maxGuard > 0) return true; // Already has shield
+    // Include if Dynamax Cannon would boost from 0→1
+    return dynamaxCannonActive && !NO_DYNAMAX_CANNON_BOOST.has(p.pokemonId);
+  });
+
+  const sortBy = (key, asc=false) => [...scored].sort((a,b) => asc?a[key]-b[key]:b[key]-a[key]);
+  const maxOf  = key => Math.max(...scored.map(p=>p[key])) || 1;
+  const minOf  = key => Math.min(...scored.map(p=>p[key])) || 1;
+  const maxOfHealers = key => healers.length > 0 ? Math.max(...healers.map(p=>p[key])) || 1 : 1;
+  const minOfShielders = key => shielders.length > 0 ? Math.min(...shielders.map(p=>p[key])) || 1 : 1;
+
+  const bossTag = boss
+    ? `<span class="boss-badge">vs ${formatDisplayName(boss.pokemonId)} · ${getBossTypes(boss).join('/')}</span>`
+    : `<span class="boss-badge" style="color:var(--muted);border-color:var(--border)">No boss selected</span>`;
+
+  document.getElementById('results').innerHTML = `
+    <div class="results-header">
+      <div class="panel-title" style="margin:0">📊 Rankings</div>${bossTag}
+    </div>
+    <div class="results-grid">
+      ${renderRole('Attackers','⚔️','attacker',sortBy('atkDmg'),'atkDmg',maxOf('atkDmg'),
+          p=>`Score: <strong style="color:var(--red)">${p.atkDmg}</strong> · ${effTag(p.atkEff,'atk')}<br><span style="opacity:0.8;font-size:0.9em;">${p.maxMoveName || 'Unknown Move'} · Lv${p.effectiveMaxLevel}</span>`)}
+      ${shielders.length > 0 ? renderRole('Shielders','🔵','shielder',shielders.sort((a,b)=>a.shieldScore-b.shieldScore),'shieldScore',minOfShielders('shieldScore'),
+          p=>`Score: <strong style="color:var(--blue)">${Math.round(p.shieldScore)}</strong><br><span style="opacity:0.8;font-size:0.9em;">Guard Lv${p.effectiveGuardLevel}</span>`, true) : ''}
+      ${renderRole('Tanks','🛡️','tank',sortBy('tankScore',true),'tankScore',minOf('tankScore'),
+          p=>`Score: <strong style="color:var(--green)">${p.tankScore.toFixed(1)}</strong>`, true)}
+      ${healers.length > 0 ? renderRole('Healers','💚','healer',healers.sort((a,b)=>b.healScore-a.healScore),'healBarScore',maxOfHealers('healBarScore'),
+          p=>`Score: <strong style="color:#10b981">${p.healAmount}</strong> HP<br><span style="opacity:0.8;font-size:0.9em;">Spirit Lv${p.effectiveSpiritLevel}</span>`) : ''}
+    </div>`;
+  document.getElementById('tip').style.display = 'block';
+  } catch (error) {
+    console.error('Analysis error:', error);
+    alert('Error during analysis: ' + error.message + '\n\nCheck console for details.');
+  }
+}
+
+function effTag(val, role) {
+  if (role === 'atk') {
+    if (val >= 2.56) return `<span class="eff-tag eff-super">2× Super!</span>`;      // 1.6 × 1.6
+    if (val >= 1.6)  return `<span class="eff-tag eff-super">Super Eff.</span>`;     // 1.6
+    if (val <= 0.390625) return `<span class="eff-tag eff-weak">2× Resisted</span>`; // 0.625 × 0.625
+    if (val < 1)     return `<span class="eff-tag eff-weak">Not Very Eff.</span>`;   // 0.625
+    return `<span class="eff-tag eff-neutral">Neutral</span>`;                        // 1.0
+  } else {
+    if (val <= 0.390625) return `<span class="eff-tag eff-good">2× Resists!</span>`; // 0.625 × 0.625
+    if (val <= 0.625)  return `<span class="eff-tag eff-good">Resists!</span>`;      // 0.625
+    if (val >= 2.56) return `<span class="eff-tag eff-super">2× Vulnerable!</span>`; // 1.6 × 1.6
+    if (val >= 1.6)  return `<span class="eff-tag eff-super">Vulnerable!</span>`;    // 1.6
+    return `<span class="eff-tag eff-neutral">Neutral</span>`;                        // 1.0
+  }
+}
+
+function changePage(category, direction) {
+  const totalPages = Math.ceil(window[`${category.toLowerCase()}List`].length / ITEMS_PER_PAGE);
+  
+  if (direction === 'prev') {
+    categoryPages[category] = Math.max(1, categoryPages[category] - 1);
+  } else if (direction === 'next') {
+    categoryPages[category] = Math.min(totalPages, categoryPages[category] + 1);
+  }
+  
+  renderCategory(category);
+}
+
+function goToPage(category, page) {
+  const totalPages = Math.ceil(window[`${category.toLowerCase()}List`].length / ITEMS_PER_PAGE);
+  const pageNum = parseInt(page);
+  
+  if (isNaN(pageNum) || pageNum < 1 || pageNum > totalPages) {
+    // Restore current page value in input
+    renderCategory(category);
+    return;
+  }
+  
+  categoryPages[category] = pageNum;
+  renderCategory(category);
+}
+
+function renderCategory(category) {
+  // Re-render just this category
+  const categoryData = window[`${category.toLowerCase()}Data`];
+  if (!categoryData) return;
+  
+  const { label, icon, cls, list, scoreKey, max, detailFn, inverse } = categoryData;
+  const html = renderRole(label, icon, cls, list, scoreKey, max, detailFn, inverse);
+  
+  // Find and replace the specific category card
+  const roleCards = document.querySelectorAll('.role-card');
+  roleCards.forEach(card => {
+    const header = card.querySelector('.role-header span:last-child');
+    if (header && header.textContent === label) {
+      card.outerHTML = html;
+    }
+  });
+}
+
+function changeRosterPage(direction) {
+  const totalPages = Math.ceil(roster.length / ROSTER_ITEMS_PER_PAGE);
+  
+  if (direction === 'prev') {
+    rosterCurrentPage = Math.max(1, rosterCurrentPage - 1);
+  } else if (direction === 'next') {
+    rosterCurrentPage = Math.min(totalPages, rosterCurrentPage + 1);
+  }
+  
+  renderRoster();
+}
+
+function goToRosterPage(page) {
+  const totalPages = Math.ceil(roster.length / ROSTER_ITEMS_PER_PAGE);
+  const pageNum = parseInt(page);
+  
+  if (isNaN(pageNum) || pageNum < 1 || pageNum > totalPages) {
+    // Restore current page value in input
+    renderRoster();
+    return;
+  }
+  
+  rosterCurrentPage = pageNum;
+  renderRoster();
+}
+
+function renderRole(label, icon, cls, list, scoreKey, max, detailFn, inverse = false) {
+  const mc = i => ['gold','silver','bronze','rest'][Math.min(i,3)];
+  const mn = i => ['#1','#2','#3'][i] || `#${i+1}`;
+  
+  // Store category data for re-rendering
+  window[`${label.toLowerCase()}List`] = list;
+  window[`${label.toLowerCase()}Data`] = { label, icon, cls, list, scoreKey, max, detailFn, inverse };
+  
+  // Calculate pagination
+  const currentPage = categoryPages[label] || 1;
+  const totalPages = Math.ceil(list.length / ITEMS_PER_PAGE);
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIdx = startIdx + ITEMS_PER_PAGE;
+  const pageItems = list.slice(startIdx, endIdx);
+  
+  return `
+    <div class="role-card">
+      <div class="role-header ${cls}"><span>${icon}</span><span>${label}</span></div>
+      <div class="role-entries">
+        ${pageItems.map((p,i)=>{
+          const actualIndex = startIdx + i; // Actual rank number
+          // Calculate bar width
+          let barWidth;
+          if (inverse) {
+            // For shielders: lower score = better, so invert the calculation
+            // Best (min) score gets 100%, others get (min/their_score) × 100
+            barWidth = Math.min((max / p[scoreKey]) * 100, 100);
+          } else {
+            // Normal: higher score = fuller bar
+            barWidth = Math.min((p[scoreKey] / max) * 100, 100);
+          }
+          
+          return `
+          <div class="rank-entry" style="animation-delay:${i*.06}s">
+            <div class="rank-num ${mc(actualIndex)}">${mn(actualIndex)}</div>
+            <div class="rank-info">
+              <div class="rank-name">${esc(p.name)} [${p.type}]</div>
+              <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">Percentage to best: ${barWidth.toFixed(1)}%</div>
+              <div class="rank-detail">${detailFn(p)}</div>
+            </div>
+            <div class="bar-wrap"><div class="bar-fill ${cls}" style="width:${barWidth.toFixed(1)}%"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${totalPages > 1 ? `
+      <div class="pagination-controls">
+        <button class="btn btn-page" onclick="changePage('${label}', 'prev')" ${currentPage === 1 ? 'disabled' : ''}>◀ Prev</button>
+        <div class="page-input-wrap">
+          <span style="font-size:0.8rem;color:var(--muted);">Page</span>
+          <input type="number" 
+                 class="page-number-input" 
+                 value="${currentPage}" 
+                 min="1" 
+                 max="${totalPages}"
+                 onchange="goToPage('${label}', this.value)"
+                 onkeypress="if(event.key==='Enter') goToPage('${label}', this.value)">
+          <span style="font-size:0.8rem;color:var(--muted);">of ${totalPages}</span>
+        </div>
+        <button class="btn btn-page" onclick="changePage('${label}', 'next')" ${currentPage === totalPages ? 'disabled' : ''}>Next ▶</button>
+      </div>
+      ` : ''}
+    </div>`;
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>
