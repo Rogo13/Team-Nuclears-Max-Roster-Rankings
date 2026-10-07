@@ -2,7 +2,7 @@
 
 A single-page tool for ranking your Pokémon GO roster against Max Battle bosses. Pick a boss, add your Pokémon with their level and IVs, and get ranked recommendations across four roles.
 
-**[Live version →](#)** <!-- add your GitHub Pages link once it's live -->
+**[Live version →](#)** https://rogo13.github.io/Team-Nuclears-Max-Roster-Rankings/<!-- add your GitHub Pages link once it's live -->
 
 ## What it does
 
@@ -18,9 +18,9 @@ A single-page tool for ranking your Pokémon GO roster against Max Battle bosses
 
 ## Roster database
 
-- 153 catchable Pokémon
-- 39 boss-eligible Pokémon (G-Max capable or Legendary/Mythical)
-- 87 fast moves, 142 charged moves
+- 155 catchable Pokémon
+- 40 boss-eligible Pokémon (G-Max capable or Legendary/Mythical)
+- 87 fast moves, 143 charged moves
 
 ## Running it
 
