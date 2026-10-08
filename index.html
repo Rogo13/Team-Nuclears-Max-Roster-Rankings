@@ -905,7 +905,8 @@ const CHARGED_MOVES = {
   "HORN_ATTACK": {type: "POKEMON_TYPE_NORMAL", power: 45.0, durationMs: 2000, energy: 33},
   "BREAKING_SWIPE": {type: "POKEMON_TYPE_DRAGON", power: 45.0, durationMs: 1000, energy: 33},
   "ROCK_WRECKER": {type: "POKEMON_TYPE_ROCK", power: 110.0, durationMs: 3500, energy: 50},
-  "DRACO_METEOR": {type: "POKEMON_TYPE_DRAGON", power: 150.0, durationMs: 3500, energy: 100}
+  "DRACO_METEOR": {type: "POKEMON_TYPE_DRAGON", power: 150.0, durationMs: 3500, energy: 100},
+  "LUNGE": {type: "POKEMON_TYPE_BUG", power: 55.0, durationMs: 3000, energy: 33}
 };
 
 // console.log('✓ CHARGED_MOVES loaded:', Object.keys(CHARGED_MOVES).length, 'moves');
@@ -1069,7 +1070,9 @@ const POKEDEX = {
     {pokemonId:"RHYDON",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:222,baseDefense:171,baseStamina:233},quickMoves:["MUD_SLAP_FAST","ROCK_SMASH_FAST"],canGmax:false,isLegendaryOrMythical:false},
     {pokemonId:"RHYPERIOR",type:"POKEMON_TYPE_GROUND",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:241,baseDefense:190,baseStamina:251},quickMoves:["MUD_SLAP_FAST","SMACK_DOWN_FAST"],canGmax:false,isLegendaryOrMythical:false},
     {pokemonId:"PALKIA",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:280,baseDefense:215,baseStamina:189},quickMoves:["DRAGON_BREATH_FAST","DRAGON_TAIL_FAST"],canGmax:false,isLegendaryOrMythical:true},
-    {pokemonId:"DIALGA",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:275,baseDefense:211,baseStamina:205},quickMoves:["DRAGON_BREATH_FAST","METAL_CLAW_FAST"],canGmax:false,isLegendaryOrMythical:true}
+    {pokemonId:"DIALGA",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:275,baseDefense:211,baseStamina:205},quickMoves:["DRAGON_BREATH_FAST","METAL_CLAW_FAST"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"SIZZLIPEDE",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_BUG",stats:{baseAttack:118,baseDefense:90,baseStamina:137},quickMoves:["BUG_BITE_FAST","EMBER_FAST"],canGmax:false,isLegendaryOrMythical:false},
+    {pokemonId:"CENTISKORCH",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_BUG",stats:{baseAttack:220,baseDefense:158,baseStamina:225},quickMoves:["BUG_BITE_FAST","EMBER_FAST"],canGmax:true,isLegendaryOrMythical:false}
   ]
 };
 
@@ -1117,7 +1120,8 @@ const BOSSES = {
     {pokemonId:"REGIROCK",type:"POKEMON_TYPE_ROCK",type2:"POKEMON_TYPE_ROCK",stats:{baseAttack:179,baseDefense:309,baseStamina:190},chargedMoves:["STONE_EDGE","FOCUS_BLAST","ZAP_CANNON","EARTHQUAKE"],canGmax:false,isLegendaryOrMythical:true},
     {pokemonId:"REGISTEEL",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_STEEL",stats:{baseAttack:143,baseDefense:285,baseStamina:190},chargedMoves:["HYPER_BEAM","FLASH_CANNON","FOCUS_BLAST","ZAP_CANNON"],canGmax:false,isLegendaryOrMythical:true},
     {pokemonId:"PALKIA",type:"POKEMON_TYPE_WATER",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:280,baseDefense:215,baseStamina:189},chargedMoves:["AQUA_TAIL","FIRE_BLAST","HYDRO_PUMP","DRACO_METEOR"],canGmax:false,isLegendaryOrMythical:true},
-    {pokemonId:"DIALGA",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:275,baseDefense:211,baseStamina:205},chargedMoves:["IRON_HEAD","THUNDER","DRACO_METEOR"],canGmax:false,isLegendaryOrMythical:true}
+    {pokemonId:"DIALGA",type:"POKEMON_TYPE_STEEL",type2:"POKEMON_TYPE_DRAGON",stats:{baseAttack:275,baseDefense:211,baseStamina:205},chargedMoves:["IRON_HEAD","THUNDER","DRACO_METEOR"],canGmax:false,isLegendaryOrMythical:true},
+    {pokemonId:"CENTISKORCH",type:"POKEMON_TYPE_FIRE",type2:"POKEMON_TYPE_BUG",stats:{baseAttack:220,baseDefense:158,baseStamina:225},chargedMoves:["HEAT_WAVE","BUG_BUZZ","CRUNCH","LUNGE"],canGmax:true,isLegendaryOrMythical:false}
   ]
 };
 
